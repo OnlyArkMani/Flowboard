@@ -1,0 +1,51 @@
+StudentID,StudentName,Class,Section,Subject,Marks,MaxMarks,ExamName,ExamDate
+S001,Aarav Sharma,10,B,English,83,100,Midterm,2025-12-10
+S001,Aarav Sharma,10,B,Mathematics,68,100,Midterm,2025-12-10
+S001,Aarav Sharma,10,B,Science,93,100,Midterm,2025-12-10
+S001,Aarav Sharma,10,B,Social Science,78,100,Midterm,2025-12-10
+S001,Aarav Sharma,10,B,Computer,85,100,Midterm,2025-12-10
+S002,Diya Patel,10,A,English,80,100,Midterm,2025-12-10
+S002,Diya Patel,10,A,Mathematics,84,100,Midterm,2025-12-10
+S002,Diya Patel,10,A,Science,74,100,Midterm,2025-12-10
+S002,Diya Patel,10,A,Social Science,76,100,Midterm,2025-12-10
+S002,Diya Patel,10,A,Computer,74,100,Midterm,2025-12-10
+S003,Kabir Singh,10,B,English,86,100,Midterm,2025-12-10
+S003,Kabir Singh,10,B,Mathematics,77,100,Midterm,2025-12-10
+S003,Kabir Singh,10,B,Science,88,100,Midterm,2025-12-10
+S003,Kabir Singh,10,B,Social Science,66,100,Midterm,2025-12-10
+S003,Kabir Singh,10,B,Computer,68,100,Midterm,2025-12-10
+S004,Meera Iyer,10,B,English,69,100,Midterm,2025-12-10
+S004,Meera Iyer,10,B,Mathematics,80,100,Midterm,2025-12-10
+S004,Meera Iyer,10,B,Science,74,100,Midterm,2025-12-10
+S004,Meera Iyer,10,B,Social Science,65,100,Midterm,2025-12-10
+S004,Meera Iyer,10,B,Computer,69,100,Midterm,2025-12-10
+S005,Rohan Gupta,10,B,English,75,100,Midterm,2025-12-10
+S005,Rohan Gupta,10,B,Mathematics,76,100,Midterm,2025-12-10
+S005,Rohan Gupta,10,B,Science,64,100,Midterm,2025-12-10
+S005,Rohan Gupta,10,B,Social Science,92,100,Midterm,2025-12-10
+S005,Rohan Gupta,10,B,Computer,78,100,Midterm,2025-12-10
+S006,Sara Khan,10,A,English,86,100,Midterm,2025-12-10
+S006,Sara Khan,10,A,Mathematics,61,100,Midterm,2025-12-10
+S006,Sara Khan,10,A,Science,82,100,Midterm,2025-12-10
+S006,Sara Khan,10,A,Social Science,75,100,Midterm,2025-12-10
+S006,Sara Khan,10,A,Computer,73,100,Midterm,2025-12-10
+S007,Vivaan Das,10,A,English,57,100,Midterm,2025-12-10
+S007,Vivaan Das,10,A,Mathematics,72,100,Midterm,2025-12-10
+S007,Vivaan Das,10,A,Science,74,100,Midterm,2025-12-10
+S007,Vivaan Das,10,A,Social Science,58,100,Midterm,2025-12-10
+S007,Vivaan Das,10,A,Computer,82,100,Midterm,2025-12-10
+S008,Ananya Rao,10,A,English,66,100,Midterm,2025-12-10
+S008,Ananya Rao,10,A,Mathematics,77,100,Midterm,2025-12-10
+S008,Ananya Rao,10,A,Science,54,100,Midterm,2025-12-10
+S008,Ananya Rao,10,A,Social Science,72,100,Midterm,2025-12-10
+S008,Ananya Rao,10,A,Computer,87,100,Midterm,2025-12-10
+S009,Ishaan Verma,10,B,English,85,100,Midterm,2025-12-10
+S009,Ishaan Verma,10,B,Mathematics,58,100,Midterm,2025-12-10
+S009,Ishaan Verma,10,B,Science,64,100,Midterm,2025-12-10
+S009,Ishaan Verma,10,B,Social Science,100,100,Midterm,2025-12-10
+S009,Ishaan Verma,10,B,Computer,81,100,Midterm,2025-12-10
+S010,Nisha Nair,10,B,English,80,100,Midterm,2025-12-10
+S010,Nisha Nair,10,B,Mathematics,80,100,Midterm,2025-12-10
+S010,Nisha Nair,10,B,Science,83,100,Midterm,2025-12-10
+S010,Nisha Nair,10,B,Social Science,89,100,Midterm,2025-12-10
+S010,Nisha Nair,10,B,Computer,76,100,Midterm,2025-12-10
