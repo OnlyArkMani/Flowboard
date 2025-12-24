@@ -10,3 +10,4 @@ rq-scheduler==0.13.1
 pandas==2.2.2
 openpyxl==3.1.5
 pdfplumber==0.11.4
+fpdf2==2.7.9

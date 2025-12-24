@@ -54,6 +54,9 @@ class Upload(models.Model):
     report_generated_at = models.DateTimeField(null=True, blank=True)
     report_csv = models.TextField(blank=True, default="")
     report_meta = models.JSONField(default=dict, blank=True)
+    report_pdf = models.TextField(blank=True, default="")
+    process_mode = models.CharField(max_length=50, blank=True, default="transform_gradebook")
+    process_config = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["-received_at"]

@@ -52,7 +52,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DB_NAME = os.getenv("DB_NAME", "flowboard")
+DB_NAME = os.getenv("DB_NAME", "batchops")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
 DB_HOST = os.getenv("DB_HOST", "localhost")

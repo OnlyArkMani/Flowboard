@@ -18,18 +18,18 @@ def record_incident_metric(state: str) -> None:
 def get_metrics_data() -> str:
     # Prometheus text format
     lines = []
-    lines.append("# HELP flowboard_job_runs_total Total job runs by job and status")
-    lines.append("# TYPE flowboard_job_runs_total counter")
+    lines.append("# HELP batchops_job_runs_total Total job runs by job and status")
+    lines.append("# TYPE batchops_job_runs_total counter")
     for (job_name, status), value in sorted(_JOB.items()):
-        lines.append(f'flowboard_job_runs_total{{job="{job_name}",status="{status}"}} {value}')
+        lines.append(f'batchops_job_runs_total{{job="{job_name}",status="{status}"}} {value}')
 
-    lines.append("# HELP flowboard_incidents_total Total incidents by state")
-    lines.append("# TYPE flowboard_incidents_total counter")
+    lines.append("# HELP batchops_incidents_total Total incidents by state")
+    lines.append("# TYPE batchops_incidents_total counter")
     for (state,), value in sorted(_INCIDENT.items()):
-        lines.append(f'flowboard_incidents_total{{state="{state}"}} {value}')
+        lines.append(f'batchops_incidents_total{{state="{state}"}} {value}')
 
-    lines.append(f'# HELP flowboard_build_info Build info')
-    lines.append(f'# TYPE flowboard_build_info gauge')
-    lines.append(f'flowboard_build_info{{ts="{timezone.now().isoformat()}"}} 1')
+    lines.append(f'# HELP batchops_build_info Build info')
+    lines.append(f'# TYPE batchops_build_info gauge')
+    lines.append(f'batchops_build_info{{ts="{timezone.now().isoformat()}"}} 1')
 
     return "\n".join(lines) + "\n"

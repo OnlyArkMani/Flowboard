@@ -1,7 +1,9 @@
 import csv
 import io
 import os
+import json
 import logging
+import base64
 from datetime import datetime
 
 import pandas as pd
@@ -20,7 +22,14 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import Upload, JobRun, Incident, Ticket, Job
 from .serializers import UploadSerializer, JobRunSerializer, IncidentSerializer, TicketSerializer, JobSerializer
-from .workers import job_chain_standardize, _load_df, _append_incident_event
+from .workers import (
+    job_chain_standardize,
+    _load_df,
+    _append_incident_event,
+    _apply_processing_plan,
+    _normalize_column_label,
+    _build_pdf_table,
+)
 from .metrics import get_metrics_data
 from .queues import default_queue, redis_conn
 from .scheduler import enqueue_job_now
@@ -30,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 def regenerate_report(upload: Upload) -> str | None:
     """
-    Best-effort regeneration of the summary CSV if the pipeline file was removed.
+    Best-effort regeneration of the processed CSV if the pipeline file was removed.
     """
     try:
         df = _load_df(upload)
@@ -38,7 +47,7 @@ def regenerate_report(upload: Upload) -> str | None:
         logger.exception("Failed to reload upload %s for report regen: %s", upload.upload_id, exc)
         return None
 
-    df.columns = [" ".join(str(c).split()).strip().lower() for c in df.columns]
+    df.columns = [_normalize_column_label(c) for c in df.columns]
     summary_rows = [
         ["upload_id", str(upload.upload_id)],
         ["department", upload.department],
@@ -47,23 +56,66 @@ def regenerate_report(upload: Upload) -> str | None:
         ["cols", len(df.columns)],
         ["columns", ", ".join(df.columns.tolist())],
     ]
+    summary = {
+        "rows": len(df),
+        "cols": len(df.columns),
+        "columns": df.columns.tolist(),
+        "summary_rows": list(summary_rows),
+    }
 
     numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+    summary["numeric_cols"] = numeric_cols
     if numeric_cols:
         desc = df[numeric_cols].describe()
+        summary["describe"] = desc.to_dict()
         for col in numeric_cols:
             stats = desc[col].to_dict()
             for stat_name, value in stats.items():
                 summary_rows.append([f"{col}.{stat_name}", value])
+    summary["summary_rows"] = summary_rows
 
+    for c in df.columns:
+        series = df[c]
+        if series.dtype == "object":
+            series = series.astype(str).str.strip()
+            df[c] = pd.to_numeric(series, errors="ignore")
+        else:
+            df[c] = series
+
+    mode = (upload.process_mode or "transform_gradebook").strip().lower()
     export_dir = getattr(settings, "EXPORT_DIR", "/app/storage/exports")
     os.makedirs(export_dir, exist_ok=True)
-    export_path = os.path.join(export_dir, f"{upload.upload_id}-summary.csv")
 
-    pd.DataFrame(summary_rows, columns=["field", "value"]).to_csv(export_path, index=False)
+    if mode == "transform_gradebook":
+        export_path = os.path.join(export_dir, f"{upload.upload_id}-summary.csv")
+        df_rows = pd.DataFrame(summary_rows, columns=["field", "value"])
+        df_rows.to_csv(export_path, index=False)
+        csv_buf = io.StringIO()
+        df_rows.to_csv(csv_buf, index=False)
+        pdf_columns = ["field", "value"]
+        pdf_rows = summary_rows
+    else:
+        plan_df, plan_mode, plan_summary = _apply_processing_plan(df, upload)
+        df = plan_df
+        summary["processing_plan"] = {
+            "mode": plan_mode,
+            "description": plan_summary,
+            "config": upload.process_config or {},
+        }
+        export_path = os.path.join(export_dir, f"{upload.upload_id}-processed.csv")
+        df.to_csv(export_path, index=False)
+        csv_buf = io.StringIO()
+        df.to_csv(csv_buf, index=False)
+        pdf_columns = list(df.columns)
+        pdf_rows = df.astype(str).values.tolist()
+
     upload.report_path = export_path
     upload.report_generated_at = timezone.now()
-    upload.save(update_fields=["report_path", "report_generated_at"])
+    upload.report_csv = csv_buf.getvalue()
+    upload.report_meta = summary
+    pdf_bytes = _build_pdf_table(f"Upload {upload.upload_id}", pdf_columns, pdf_rows or [])
+    upload.report_pdf = base64.b64encode(pdf_bytes).decode("ascii")
+    upload.save(update_fields=["report_path", "report_generated_at", "report_csv", "report_pdf", "report_meta"])
     return export_path
 
 
@@ -88,6 +140,16 @@ class UploadViewSet(viewsets.ModelViewSet):
         f = request.FILES.get("file")
         department = request.data.get("department", "General")
         notes = request.data.get("notes", "")
+        process_mode = request.data.get("process_mode") or "transform_gradebook"
+        raw_config = request.data.get("process_config")
+        process_config = {}
+        if isinstance(raw_config, (str, bytes)):
+            try:
+                process_config = json.loads(raw_config)
+            except json.JSONDecodeError:
+                process_config = {}
+        elif isinstance(raw_config, dict):
+            process_config = raw_config
 
         if not f:
             return Response({"error": "file is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -98,6 +160,8 @@ class UploadViewSet(viewsets.ModelViewSet):
             mime_type=f.content_type or "",
             notes=notes,
             status="processing",
+            process_mode=process_mode,
+            process_config=process_config,
         )
 
         upload_dir = getattr(settings, "UPLOAD_DIR", "/app/storage/uploads")
@@ -346,6 +410,9 @@ class TicketViewSet(viewsets.ModelViewSet):
 def reports_summary(request):
     upload_id = request.query_params.get("upload_id")
     job_run_id = request.query_params.get("job_run_id")
+    requested_format = request.query_params.get("format", "csv").lower()
+    if requested_format not in {"csv", "pdf"}:
+        requested_format = "csv"
 
     upload = None
     job_run = None
@@ -384,15 +451,32 @@ def reports_summary(request):
             status=status.HTTP_409_CONFLICT,
         )
 
+    mode = (upload.process_mode or "transform_gradebook").strip().lower()
+    filename_prefix = "summary" if mode == "transform_gradebook" else "processed"
+
+    if requested_format == "pdf":
+        if upload.report_pdf:
+            data = base64.b64decode(upload.report_pdf)
+            resp = HttpResponse(data, content_type="application/pdf")
+            resp["Content-Disposition"] = f'attachment; filename="{filename_prefix}-{upload.upload_id}.pdf"'
+            return resp
+        regenerate_report(upload)
+        if upload.report_pdf:
+            data = base64.b64decode(upload.report_pdf)
+            resp = HttpResponse(data, content_type="application/pdf")
+            resp["Content-Disposition"] = f'attachment; filename="{filename_prefix}-{upload.upload_id}.pdf"'
+            return resp
+        return Response({"error": "PDF not available yet"}, status=status.HTTP_404_NOT_FOUND)
+
     # Prefer the DB-stored report content when available.
     if upload.report_csv:
         resp = HttpResponse(upload.report_csv, content_type="text/csv")
-        resp["Content-Disposition"] = f'attachment; filename="summary-{upload.upload_id}.csv"'
+        resp["Content-Disposition"] = f'attachment; filename="{filename_prefix}-{upload.upload_id}.csv"'
         return resp
 
-    # Prefer the pipeline-generated summary CSV, if it exists.
+    # Prefer the pipeline-generated processed/summary CSV, if it exists.
     export_dir = getattr(settings, "EXPORT_DIR", "/app/storage/exports")
-    export_path = os.path.join(export_dir, f"{upload.upload_id}-summary.csv")
+    export_path = os.path.join(export_dir, f"{upload.upload_id}-{filename_prefix}.csv")
 
     def _try_path(path: str | None):
         if not path:
@@ -402,7 +486,7 @@ def reports_summary(request):
                 with open(path, "r", newline="", encoding="utf-8") as f:
                     data = f.read()
                 resp = HttpResponse(data, content_type="text/csv")
-                resp["Content-Disposition"] = f'attachment; filename=\"summary-{upload.upload_id}.csv\"'
+                resp["Content-Disposition"] = f'attachment; filename="{filename_prefix}-{upload.upload_id}.csv"'
                 return resp
         except OSError:
             return None

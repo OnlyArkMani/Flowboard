@@ -25,7 +25,7 @@ router.register(r"jobs", JobViewSet, basename="jobs")
 
 def index(request):
     return HttpResponse(
-        "Flowboard backend is running. Use the React UI (Vite dev server) on port 5173, "
+        "BatchOps backend is running. Use the React UI (Vite dev server) on port 5173, "
         "or call the API under /api/.",
         content_type="text/plain",
     )
