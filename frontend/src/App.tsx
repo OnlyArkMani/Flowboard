@@ -5,6 +5,14 @@ import "./app.css"
 type NavKey = "dashboard" | "uploads" | "jobRuns" | "incidents" | "reports" | "jobs"
 type PillTone = "live" | "pipeline" | "execution" | "rca" | "workflow" | "exports"
 type QueuedUploadFile = { id: string; file: File }
+type DownloadFormat = "csv" | "pdf"
+type ProcessMode = "transform_gradebook" | "append_record" | "delete_record" | "custom_rules"
+type StageDetailPayload = {
+  step: any
+  run?: any
+  upload?: any
+  nextStep?: any
+}
 
 const NAV: Array<{
   key: NavKey
@@ -12,18 +20,18 @@ const NAV: Array<{
   icon: string
   pill: { text: string; tone: PillTone }
 }> = [
-  { key: "dashboard", label: "Dashboard", icon: "D", pill: { text: "LIVE", tone: "live" } },
-  { key: "uploads", label: "Uploads", icon: "U", pill: { text: "PIPELINE", tone: "pipeline" } },
-  { key: "jobRuns", label: "Job Runs", icon: "J", pill: { text: "EXECUTION", tone: "execution" } },
-  { key: "incidents", label: "Incidents", icon: "I", pill: { text: "RCA", tone: "rca" } },
-  { key: "reports", label: "Reports", icon: "R", pill: { text: "EXPORTS", tone: "exports" } },
-  { key: "jobs", label: "Jobs", icon: "S", pill: { text: "CRON", tone: "workflow" } },
+  { key: "dashboard", label: "Home", icon: "D", pill: { text: "STATUS", tone: "live" } },
+  { key: "uploads", label: "Files", icon: "U", pill: { text: "UPLOADS", tone: "pipeline" } },
+  { key: "jobRuns", label: "Processing", icon: "J", pill: { text: "RUNS", tone: "execution" } },
+  { key: "incidents", label: "Issues", icon: "I", pill: { text: "HELP", tone: "rca" } },
+  { key: "reports", label: "Reports", icon: "R", pill: { text: "DOWNLOADS", tone: "exports" } },
+  { key: "jobs", label: "Schedules", icon: "S", pill: { text: "AUTOMATION", tone: "workflow" } },
 ]
 
 const MAX_UPLOAD_FILES = 5
-const LAST_NAV_KEY = "flowboard:lastNav"
-const LAST_UPLOAD_KEY = "flowboard:lastUpload"
-const UPLOAD_QUEUE_DB = "flowboardUploadQueue"
+const LAST_NAV_KEY = "batchops:lastNav"
+const LAST_UPLOAD_KEY = "batchops:lastUpload"
+const UPLOAD_QUEUE_DB = "batchopsUploadQueue"
 const UPLOAD_QUEUE_STORE = "files"
 
 function cx(...xs: Array<string | false | null | undefined>) {
@@ -145,15 +153,17 @@ function DetailModal({
   subtitle,
   onClose,
   children,
+  className,
 }: {
   title: string
   subtitle?: React.ReactNode
   onClose: () => void
   children: React.ReactNode
+  className?: string
 }) {
   return (
     <div className="modalBackdrop" onClick={onClose}>
-      <div className="modal detailModal" onClick={(e) => e.stopPropagation()}>
+      <div className={cx("modal", "detailModal", className)} onClick={(e) => e.stopPropagation()}>
         <div className="modalHeader">
           <div>
             <div className="modalTitle">{title}</div>
@@ -166,6 +176,139 @@ function DetailModal({
         <div className="modalBody">{children}</div>
       </div>
     </div>
+  )
+}
+
+function buildStageDetail(step: any, steps: any[], run?: any, upload?: any): StageDetailPayload {
+  const match = steps.findIndex(
+    (candidate) =>
+      candidate === step ||
+      (candidate?.name === step?.name && candidate?.started_at === step?.started_at && candidate?.status === step?.status),
+  )
+  const nextStep = match >= 0 && match + 1 < steps.length ? steps[match + 1] : undefined
+  return { step, run, upload, nextStep }
+}
+
+function StageDetailModal({ stage, onClose }: { stage: StageDetailPayload; onClose: () => void }) {
+  const step = stage.step || {}
+  const uploadId =
+    stage.upload?.upload_id ||
+    stage.upload?.id ||
+    stage.run?.upload_id ||
+    stage.run?.upload?.upload_id ||
+    stage.run?.upload
+  const uploadName = stage.upload?.filename || stage.run?.upload?.filename || stage.run?.upload_filename
+  const runId = stage.run?.run_id || stage.run?.id
+  const fileDepartment = stage.upload?.department || stage.run?.upload?.department
+  const fileStatus = stage.upload?.status || stage.run?.upload?.status
+  const processLabel = formatProcessMode(stage.upload?.process_mode || stage.run?.upload?.process_mode)
+  const fileNotes = stage.upload?.notes || stage.run?.upload?.notes
+  const insight = stepInsight(step.name)
+  const overview = insight?.overview || stepDescription(step.name)
+  const checks = insight?.checks
+  const output = insight?.output
+  const hasFileDetails =
+    Boolean(uploadName) || Boolean(fileDepartment) || Boolean(fileStatus) || (processLabel && processLabel !== "-")
+  const title = `${formatStepName(step.name)} stage`
+  const subtitle = (
+    <span className="muted">
+      {uploadName ? `${uploadName} | ` : ""}File {uploadId ? String(uploadId).slice(0, 8) : "-"}
+      {runId ? ` | Run ${String(runId).slice(0, 8)}` : ""}
+    </span>
+  )
+  const durationLabel =
+    typeof step.duration_ms === "number" ? formatDuration(step.duration_ms) : formatDuration(undefined)
+  return (
+    <DetailModal title={title} subtitle={subtitle} onClose={onClose} className="stageDetailModal">
+      <div className="detailGrid">
+        <div>
+          <div className="muted">Status</div>
+          <span className={cx("statusChip", step.status === "failed" ? "bad" : step.status === "success" ? "ok" : "")}>
+            {step.status || "-"}
+          </span>
+        </div>
+        <div>
+          <div className="muted">Started</div>
+          <div>{fmtDate(step.started_at)}</div>
+        </div>
+        <div>
+          <div className="muted">Finished</div>
+          <div>{fmtDate(step.finished_at)}</div>
+        </div>
+        <div>
+          <div className="muted">Duration</div>
+          <div className="mono">{durationLabel}</div>
+        </div>
+      </div>
+
+      {hasFileDetails ? (
+        <div className="detailSection">
+          <div className="detailTitle">File details</div>
+          <div className="detailGrid">
+            <div>
+              <div className="muted">File name</div>
+              <div>{uploadName || "-"}</div>
+            </div>
+            <div>
+              <div className="muted">Department</div>
+              <div>{fileDepartment || "-"}</div>
+            </div>
+            <div>
+              <div className="muted">Request type</div>
+              <div>{processLabel}</div>
+            </div>
+            <div>
+              <div className="muted">File status</div>
+              <span className={cx("statusChip", fileStatus === "failed" ? "bad" : fileStatus === "published" ? "ok" : "")}>
+                {fileStatus || "-"}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="detailSection">
+        <div className="detailTitle">What this stage does</div>
+        <div className="detailTextBlock">{overview}</div>
+      </div>
+
+      {Array.isArray(checks) && checks.length > 0 ? (
+        <div className="detailSection">
+          <div className="detailTitle">What to check</div>
+          <ul className="plainList">
+            {checks.map((item, idx) => (
+              <li key={`${step.name || "step"}-check-${idx}`}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {output ? (
+        <div className="detailSection">
+          <div className="detailTitle">Output from this stage</div>
+          <div className="detailTextBlock">{output}</div>
+        </div>
+      ) : null}
+
+      {fileNotes ? (
+        <div className="detailSection">
+          <div className="detailTitle">File notes</div>
+          <div className="detailTextBlock">{fileNotes}</div>
+        </div>
+      ) : null}
+
+      <div className="detailSection">
+        <div className="detailTitle">Notes from this stage</div>
+        <div className="detailTextBlock">{step.logs || "No notes were recorded for this stage."}</div>
+      </div>
+
+      {stage.nextStep ? (
+        <div className="detailSection">
+          <div className="detailTitle">Next stage</div>
+          <div className="detailTextBlock">{formatStepName(stage.nextStep.name)}</div>
+        </div>
+      ) : null}
+    </DetailModal>
   )
 }
 
@@ -230,6 +373,12 @@ function clampText(s: any, n = 120) {
   return t.slice(0, n) + "…"
 }
 
+function formatDuration(ms?: number | null) {
+  if (typeof ms !== "number" || Number.isNaN(ms)) return "-"
+  if (ms < 1000) return `${ms} ms`
+  return `${(ms / 1000).toFixed(1)} sec`
+}
+
 function formatFileSize(bytes?: number | null) {
   if (typeof bytes !== "number" || Number.isNaN(bytes) || bytes <= 0) return "—"
   const units = ["B", "KB", "MB", "GB", "TB"]
@@ -247,14 +396,32 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function triggerCsvDownload(data: BlobPart, uploadId: string) {
-  const blob = new Blob([data], { type: "text/csv" })
+function triggerCsvDownload(data: BlobPart, uploadId: string, mode?: string, mime = "text/csv") {
+  const normalized = (mode || "transform_gradebook").toLowerCase()
+  const prefix = normalized === "transform_gradebook" ? "summary" : "processed"
+  const extension = mime === "application/pdf" ? "pdf" : "csv"
+  const blob = new Blob([data], { type: mime })
   const link = document.createElement("a")
   link.href = window.URL.createObjectURL(blob)
-  link.download = `summary-${uploadId}.csv`
+  link.download = `${prefix}-${uploadId}.${extension}`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+function base64ToArrayBuffer(encoded: string): ArrayBuffer {
+  try {
+    const binary = atob(encoded)
+    const len = binary.length
+    const buffer = new ArrayBuffer(len)
+    const bytes = new Uint8Array(buffer)
+    for (let i = 0; i < len; i += 1) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+    return buffer
+  } catch {
+    return new ArrayBuffer(0)
+  }
 }
 
 function supportsIndexedDB() {
@@ -338,11 +505,28 @@ function makeQueueId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-async function ensureReportDownloaded(uploadId: string, tries = 4) {
+async function ensureReportDownloaded(
+  uploadId: string,
+  opts?: { processMode?: ProcessMode; format?: DownloadFormat },
+  tries = 4,
+) {
+  let knownMode: ProcessMode | undefined = opts?.processMode
+  const format: DownloadFormat = opts?.format || "csv"
   try {
     const uploadData = await apiClient.uploads.get(uploadId)
-    if (uploadData?.report_csv) {
-      triggerCsvDownload(uploadData.report_csv, uploadId)
+    if (!knownMode && typeof uploadData?.process_mode === "string") {
+      knownMode = uploadData.process_mode as ProcessMode
+    }
+    if (format === "csv" && uploadData?.report_csv) {
+      triggerCsvDownload(uploadData.report_csv, uploadId, knownMode, "text/csv")
+      return
+    }
+    if (format === "pdf" && uploadData?.report_pdf) {
+      const pdfBlob =
+        typeof uploadData.report_pdf === "string"
+          ? new Blob([base64ToArrayBuffer(uploadData.report_pdf)], { type: "application/pdf" })
+          : (uploadData.report_pdf as Blob)
+      triggerCsvDownload(pdfBlob, uploadId, knownMode, "application/pdf")
       return
     }
   } catch {
@@ -351,12 +535,17 @@ async function ensureReportDownloaded(uploadId: string, tries = 4) {
 
   const token = localStorage.getItem("jwt_token")
   for (let attempt = 0; attempt < tries; attempt += 1) {
-    const res = await fetch(`${baseURL()}/api/reports/summary/?upload_id=${encodeURIComponent(uploadId)}`, {
+    const url = new URL(`${baseURL()}/api/reports/summary/`)
+    url.searchParams.set("upload_id", uploadId)
+    url.searchParams.set("format", format)
+    const res = await fetch(url.toString(), {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     })
     if (res.ok) {
       const blob = await res.blob()
-      triggerCsvDownload(blob, uploadId)
+      const contentType = res.headers.get("Content-Type") || ""
+      const guessedMime = format === "pdf" || contentType.includes("pdf") ? "application/pdf" : "text/csv"
+      triggerCsvDownload(blob, uploadId, knownMode, guessedMime)
       return
     }
     if (res.status === 404 || res.status === 409) {
@@ -372,10 +561,93 @@ async function ensureReportDownloaded(uploadId: string, tries = 4) {
   throw new Error("Report still generating. Try again shortly.")
 }
 
+const STEP_LABELS: Record<string, string> = {
+  standardize_results: "Load file",
+  validate_results: "Check data",
+  transform_gradebook: "Clean data",
+  generate_summary: "Summarize",
+  publish_results: "Publish report",
+}
+const STEP_DESCRIPTIONS: Record<string, string> = {
+  standardize_results:
+    "Imports the file, detects columns, and normalizes headers so every record follows the same structure.",
+  validate_results:
+    "Checks that required columns and rows are present, and flags missing or incomplete data before moving on.",
+  transform_gradebook:
+    "Cleans values, trims spaces, converts numbers, and applies your selected changes (add or remove rows).",
+  generate_summary:
+    "Builds a short overview of totals and key statistics so the report is easy to understand.",
+  publish_results:
+    "Creates the final CSV and PDF, saves them, and marks the file as ready to download.",
+}
+const STEP_DETAILS: Record<string, { overview: string; checks: string[]; output: string }> = {
+  standardize_results: {
+    overview: "Reads the file and lines up columns so every row follows the same layout.",
+    checks: ["File opens without errors.", "Column names look correct.", "Row count looks reasonable."],
+    output: "A clean table that is ready for data checks.",
+  },
+  validate_results: {
+    overview: "Checks required fields and flags missing or incomplete data before moving on.",
+    checks: ["Required columns like student_id are present.", "Key fields are not blank.", "Unexpected gaps are flagged."],
+    output: "A pass or fail decision with notes when something is missing.",
+  },
+  transform_gradebook: {
+    overview: "Applies your selected change like cleaning, adding rows, or removing rows.",
+    checks: ["Changes match the request you selected.", "Names and numbers look consistent.", "No unexpected values appear."],
+    output: "Updated records ready for a report.",
+  },
+  generate_summary: {
+    overview: "Builds a short summary with totals and quick statistics.",
+    checks: ["Totals match the number of rows.", "Columns listed look correct.", "Summary looks complete."],
+    output: "A summary table that feeds the final report.",
+  },
+  publish_results: {
+    overview: "Packages the final CSV and PDF and stores them for download.",
+    checks: ["Download buttons become active.", "File name matches your upload.", "Data looks correct in the report."],
+    output: "Final files saved and ready to share.",
+  },
+}
+
+const PROCESS_MODE_LABELS: Record<string, string> = {
+  transform_gradebook: "Create clean report",
+  append_record: "Add rows",
+  delete_record: "Remove rows",
+  custom_rules: "Custom request",
+}
+
 function formatStepName(name?: string) {
-  const text = String(name ?? "").replace(/_/g, " ").trim()
+  const raw = String(name ?? "").trim()
+  if (!raw) return "—"
+  const normalized = raw.toLowerCase()
+  if (STEP_LABELS[normalized]) return STEP_LABELS[normalized]
+  const text = raw.replace(/_/g, " ").trim()
   if (!text) return "—"
   return text
+    .split(" ")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ")
+}
+
+function stepDescription(name?: string) {
+  const raw = String(name ?? "").trim()
+  if (!raw) return "No description available."
+  const normalized = raw.toLowerCase()
+  return STEP_DESCRIPTIONS[normalized] || "This step prepares data for the next stage."
+}
+
+function stepInsight(name?: string) {
+  const raw = String(name ?? "").trim()
+  if (!raw) return null
+  const normalized = raw.toLowerCase()
+  return STEP_DETAILS[normalized] || null
+}
+
+function formatProcessMode(mode?: string) {
+  const raw = String(mode ?? "").trim().toLowerCase()
+  if (!raw) return "-"
+  if (PROCESS_MODE_LABELS[raw]) return PROCESS_MODE_LABELS[raw]
+  return raw
+    .replace(/_/g, " ")
     .split(" ")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ")
@@ -386,7 +658,17 @@ function summarizeSteps(details: any) {
   if (!Array.isArray(steps) || steps.length === 0) return "—"
   return steps
     .map((step: any) => `${formatStepName(step.name)}: ${step.status}`)
-    .join(" · ")
+    .join(" | ")
+}
+
+function stageProgressLabel(upload: any, summary?: string) {
+  if (summary && summary.includes(":")) return summary
+  const status = String(upload?.status ?? "").toLowerCase()
+  if (status === "processing" || status === "running") return "Running now"
+  if (status === "failed") return "Needs attention"
+  if (status === "published" || status === "success") return "Complete"
+  if (status === "pending" || status === "queued") return "Waiting to start"
+  return "Open to view"
 }
 
 /** ---------------- PAGES ---------------- */
@@ -453,11 +735,11 @@ function DashboardPage() {
           setMetricsWarning(null)
         } catch {
           if (!mounted) return
-          setMetricsWarning("Bad JSON from /api/metrics")
+          setMetricsWarning("Metrics feed is temporarily unavailable.")
         }
       } catch {
         if (!mounted) return
-        setMetricsWarning("Bad JSON from /api/metrics")
+        setMetricsWarning("Metrics feed is temporarily unavailable.")
       }
 
       // optional: /api/health/ (if you add later, this auto-fills)
@@ -483,57 +765,57 @@ function DashboardPage() {
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Control room</div>
-          <div className="pageSub">At-a-glance view of uploads, incidents, tickets and system health.</div>
-          {metricsWarning ? <div className="warnPill">● {metricsWarning}</div> : null}
+          <div className="pageTitle">Dashboard</div>
+          <div className="pageSub">A simple snapshot of files, issues, and overall system status.</div>
+          {metricsWarning ? <div className="warnPill">Warning: {metricsWarning}</div> : null}
         </div>
 
         <div className="rightHeader">
           <div className="pipelinePill">
-            <span className="dot" /> <span className="muted">Pipeline idle</span>
-            <span className="muted">Waiting for next upload</span>
+            <span className="dot" /> <span className="muted">Processing idle</span>
+            <span className="muted">Waiting for new files</span>
           </div>
         </div>
       </div>
 
       <div className="kpiGrid">
         <Card>
-          <KpiCard label="TODAY’S UPLOADS" value={todayUploads} hint="Files ingested today" />
+          <KpiCard label="TODAY'S FILES" value={todayUploads} hint="Files received today" />
         </Card>
         <Card>
-          <KpiCard label="OPEN INCIDENTS" value={openIncidents} hint="Need attention" />
+          <KpiCard label="OPEN ISSUES" value={openIncidents} hint="Need attention" />
         </Card>
         <Card>
-          <KpiCard label="OPEN INCIDENT TASKS" value={openIncidentTasks} hint="System + manual incidents" />
+          <KpiCard label="OPEN TASKS" value={openIncidentTasks} hint="Work still in progress" />
         </Card>
         <Card>
-          <KpiCard label="LAST RUN MTTR" value={lastMttr} hint="Last incident" />
+          <KpiCard label="LAST RESOLUTION TIME" value={lastMttr} hint="Last issue closed" />
         </Card>
       </div>
 
       <div className="grid2">
         <Card>
-          <CardTitle title="Pipeline overview" right={<span className="miniPill">Standardize → Validate → Transform → Publish</span>} />
+          <CardTitle title="How files are handled" right={<span className="miniPill">Upload + Check + Improve + Share</span>} />
           <div className="pipelineBoxes">
             <div className="pipelineBox">
-              <div className="pipelineBoxTitle">Ingest</div>
-              <div className="pipelineBoxText">Files land in staging and are queued.</div>
+              <div className="pipelineBoxTitle">Upload</div>
+              <div className="pipelineBoxText">Files arrive and wait their turn.</div>
             </div>
             <div className="pipelineBox">
-              <div className="pipelineBoxTitle">Validation</div>
-              <div className="pipelineBoxText">Rules, type checks and transforms run via workers.</div>
+              <div className="pipelineBoxTitle">Check & clean</div>
+              <div className="pipelineBoxText">We verify the data and tidy it up.</div>
             </div>
             <div className="pipelineBox">
-              <div className="pipelineBoxTitle">Output</div>
-              <div className="pipelineBoxText">Clean tables and exports are written for consumers.</div>
+              <div className="pipelineBoxTitle">Ready to share</div>
+              <div className="pipelineBoxText">Reports are prepared for download.</div>
             </div>
           </div>
         </Card>
 
         <Card>
-          <CardTitle title="System health" right={<span className="muted">Status from /api/health</span>} />
+          <CardTitle title="System status" right={<span className="muted">Live status check</span>} />
           {!health ? (
-            <div className="muted">No health data received.</div>
+            <div className="muted">Status is unavailable right now.</div>
           ) : (
             <div className="healthList">
               {Object.entries(health).map(([k, v]) => (
@@ -550,14 +832,14 @@ function DashboardPage() {
       </div>
 
       <Card style={{ marginTop: 16 }}>
-        <div className="sectionTitle">School-friendly automation ideas</div>
+        <div className="sectionTitle">Everyday automations for schools</div>
         <ul className="plainList">
-          <li><span className="mono">core.automation.tasks.send_attendance_reminders</span> – weekday attendance nudges.</li>
-          <li><span className="mono">core.automation.tasks.send_system_status_digest</span> – daily system health email.</li>
-          <li><span className="mono">core.automation.tasks.run_web_scrape</span> – scrape exam/admissions portals.</li>
-          <li><span className="mono">core.automation.tasks.schedule_file_ingest</span> – nightly ingest per department.</li>
-          <li><span className="mono">core.automation.tasks.purge_old_records</span> – Sunday cleanup & archiving.</li>
-          <li><span className="mono">core.automation.tasks.run_daily_backup</span> – off-peak storage backups.</li>
+          <li>Send attendance reminders to students or parents.</li>
+          <li>Send a daily system status summary to admins.</li>
+          <li>Check exam or admissions portals for updates.</li>
+          <li>Pull nightly data drops from each department.</li>
+          <li>Clean up older records and archive reports.</li>
+          <li>Run daily backups during off-peak hours.</li>
         </ul>
       </Card>
     </div>
@@ -581,6 +863,21 @@ function UploadsPage() {
   const [currentRuns, setCurrentRuns] = useState<any[]>([])
   const [currentIncident, setCurrentIncident] = useState<any | null>(null)
   const hasStoredUploadRef = useRef(false)
+  const [processMode, setProcessMode] = useState<ProcessMode>("transform_gradebook")
+  const [appendRowInput, setAppendRowInput] = useState("")
+  const [deleteColumn, setDeleteColumn] = useState("")
+  const [deleteValue, setDeleteValue] = useState("")
+  const [deleteRulesInput, setDeleteRulesInput] = useState("")
+  const [customInstructions, setCustomInstructions] = useState("")
+  const [processError, setProcessError] = useState<string | null>(null)
+  const [recentUploads, setRecentUploads] = useState<any[]>([])
+  const [recentLoading, setRecentLoading] = useState(false)
+  const [recentError, setRecentError] = useState<string | null>(null)
+  const [recentRefresh, setRecentRefresh] = useState(0)
+  const [stagesModal, setStagesModal] = useState<{ upload: any; run: any; steps: any[] } | null>(null)
+  const [stagesLoading, setStagesLoading] = useState(false)
+  const [stagesError, setStagesError] = useState<string | null>(null)
+  const [stageDetail, setStageDetail] = useState<StageDetailPayload | null>(null)
 
   useEffect(() => {
     if (currentUpload) return
@@ -681,6 +978,117 @@ function UploadsPage() {
     }
   }, [])
 
+  useEffect(() => {
+    setProcessError(null)
+    setAppendRowInput("")
+    setDeleteColumn("")
+    setDeleteValue("")
+    setDeleteRulesInput("")
+    setCustomInstructions("")
+  }, [processMode])
+
+  useEffect(() => {
+    let mounted = true
+    async function loadRecent() {
+      try {
+        setRecentLoading(true)
+        const list = await apiClient.uploads.list({ ordering: "-received_at" })
+        const items = Array.isArray(list) ? list : []
+        let runs: any[] = []
+        try {
+          const runList = await apiClient.jobRuns.list({ ordering: "-started_at" })
+          runs = Array.isArray(runList) ? runList : []
+        } catch {
+          runs = []
+        }
+        const latestByUpload = new Map<string, any>()
+        runs.forEach((run) => {
+          const uploadId = run?.upload?.upload_id ?? run?.upload_id
+          if (!uploadId) return
+          const key = String(uploadId)
+          if (!latestByUpload.has(key)) {
+            latestByUpload.set(key, run)
+          }
+        })
+        const merged = items.map((upload) => {
+          const key = String(upload?.upload_id ?? "")
+          const latestRun = key ? latestByUpload.get(key) : undefined
+          return latestRun ? { ...upload, latestRun } : upload
+        })
+        if (!mounted) return
+        setRecentUploads(merged)
+        setRecentError(null)
+      } catch {
+        if (!mounted) return
+        setRecentUploads([])
+        setRecentError("Couldn't load files right now. Please refresh.")
+      } finally {
+        if (!mounted) return
+        setRecentLoading(false)
+      }
+    }
+    loadRecent()
+    const t = setInterval(loadRecent, 6000)
+    return () => {
+      mounted = false
+      clearInterval(t)
+    }
+  }, [currentUpload?.upload_id, recentRefresh])
+
+  function buildProcessingConfig() {
+    if (processMode === "append_record") {
+      if (!appendRowInput.trim()) {
+        throw new Error("Provide the record you want to append.")
+      }
+      let parsed
+      try {
+        parsed = JSON.parse(appendRowInput)
+      } catch {
+        throw new Error("Record must be valid JSON (use an object or array of objects).")
+      }
+      if (typeof parsed !== "object" || parsed === null) {
+        throw new Error("Record must be a JSON object (or array of objects).")
+      }
+      const payload = Array.isArray(parsed) ? parsed : [parsed]
+      if (!payload.every((item) => typeof item === "object" && item !== null && !Array.isArray(item))) {
+        throw new Error("Each record must be a JSON object (key/value map).")
+      }
+      return { records: payload }
+    }
+    if (processMode === "delete_record") {
+      if (deleteRulesInput.trim()) {
+        let parsedRules
+        try {
+          parsedRules = JSON.parse(deleteRulesInput)
+        } catch {
+          throw new Error("Rules must be valid JSON (array of { column, value }).")
+        }
+        if (!Array.isArray(parsedRules) || parsedRules.length === 0) {
+          throw new Error("Provide at least one rule with column/value.")
+        }
+        const normalized = parsedRules
+          .filter((rule: any) => rule && typeof rule === "object")
+          .map((rule: any) => ({ column: String(rule.column || "").trim(), value: String(rule.value ?? "") }))
+          .filter((rule: any) => rule.column)
+        if (normalized.length === 0) {
+          throw new Error("Each delete rule must include a column name.")
+        }
+        return { rules: normalized }
+      }
+      if (!deleteColumn.trim() || !deleteValue.trim()) {
+        throw new Error("Provide both the column name and value to delete rows.")
+      }
+      return { column: deleteColumn.trim(), value: deleteValue.trim() }
+    }
+    if (processMode === "custom_rules") {
+      if (!customInstructions.trim()) {
+        throw new Error("Describe the custom rule you want BatchOps to apply.")
+      }
+      return { notes: customInstructions.trim() }
+    }
+    return {}
+  }
+
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(e.target.files ?? [])
     if (picked.length === 0) return
@@ -717,6 +1125,15 @@ function UploadsPage() {
   async function startPipeline() {
     if (queuedFiles.length === 0) return
     setUploadError(null)
+    let processConfig: any = {}
+    try {
+      processConfig = buildProcessingConfig()
+      setProcessError(null)
+    } catch (err: any) {
+      setProcessError(typeof err?.message === "string" ? err.message : "Please check the details you entered.")
+      return
+    }
+    const planConfigJson = JSON.stringify(processConfig)
     setSubmitting(true)
     try {
       const uploadOne = async (f: File) => {
@@ -724,6 +1141,8 @@ function UploadsPage() {
         fd.append("file", f)
         fd.append("department", department)
         fd.append("notes", notes)
+        fd.append("process_mode", processMode)
+        fd.append("process_config", planConfigJson)
         const res: any = await apiClient.uploads.upload(fd)
         return res?.data ?? res
       }
@@ -736,17 +1155,17 @@ function UploadsPage() {
       if (successes.length > 0) {
         setCurrentUpload(successes[successes.length - 1])
         if (successes.length > 1) {
-          alert(`Queued ${successes.length} uploads. Monitor their progress in Job Runs.`)
+          alert(`Queued ${successes.length} uploads. Monitor their progress in Processing.`)
         }
       }
 
       const failures = results.filter((r) => r.status === "rejected")
       if (failures.length > 0 && successes.length === 0) {
         setUploadError(
-          "All uploads failed. If backend logs show missing packages (like simplejwt) or migrations not run, fix backend first."
+          "All uploads failed. Please try again or contact an administrator."
         )
       } else if (failures.length > 0) {
-        setUploadError(`${failures.length} upload(s) failed. Check backend logs for details.`)
+        setUploadError(`${failures.length} upload(s) failed. Please try again.`)
       }
       setQueuedFiles([])
       persistQueuedFiles([]).catch(() => {})
@@ -755,24 +1174,25 @@ function UploadsPage() {
         fileInputRef.current.value = ""
       }
     } catch (e: any) {
-      setUploadError(
-        "Upload failed. If backend logs show missing packages (like simplejwt) or migrations not run, fix backend first."
-      )
+      setUploadError("Upload failed. Please try again or contact an administrator.")
     } finally {
       setSubmitting(false)
     }
   }
 
-  async function downloadReport() {
+  async function downloadReport(format: DownloadFormat) {
     if (!currentUpload?.upload_id) return
     if (currentUpload.status !== "published") {
-      setReportHint("Report only becomes available once status is published.")
+      setReportHint("The report becomes available once processing is finished.")
       return
     }
     setReportHint(null)
     setReportLoading(true)
     try {
-      await ensureReportDownloaded(currentUpload.upload_id)
+      await ensureReportDownloaded(currentUpload.upload_id, {
+        processMode: currentUpload.process_mode as ProcessMode,
+        format,
+      })
     } catch (e: any) {
       setReportHint(typeof e?.message === "string" ? e.message : "Download failed. Try again shortly.")
     } finally {
@@ -780,20 +1200,48 @@ function UploadsPage() {
     }
   }
 
+  async function openUploadStages(upload: any) {
+    if (!upload?.upload_id) return
+    setStagesError(null)
+    setStagesLoading(true)
+    const cachedRun = upload.latestRun ?? null
+    const cachedSteps = Array.isArray(cachedRun?.details?.steps) ? cachedRun.details.steps : []
+    setStagesModal({ upload, run: cachedRun, steps: cachedSteps })
+    try {
+      const runs = await apiClient.jobRuns.list({ upload_id: upload.upload_id, ordering: "-started_at" })
+      const latestRun = Array.isArray(runs) ? runs[0] ?? null : null
+      const steps = Array.isArray(latestRun?.details?.steps) ? latestRun.details.steps : []
+      setStagesModal({ upload, run: latestRun, steps })
+    } catch {
+      if (cachedSteps.length === 0) {
+        setStagesError("Couldn't load stages for this file.")
+      }
+    } finally {
+      setStagesLoading(false)
+    }
+  }
+
+  function closeUploadStages() {
+    setStagesModal(null)
+    setStagesError(null)
+    setStagesLoading(false)
+    setStageDetail(null)
+  }
+
   return (
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Uploads</div>
-          <div className="pageSub">Upload a results file and watch it move through each processing stage in real time.</div>
+          <div className="pageTitle">Files</div>
+          <div className="pageSub">Upload student files and we'll prepare clear reports for you.</div>
         </div>
       </div>
 
       <div className="grid2">
         <Card>
           <div className="formHeader">
-            <div className="formTitle">New upload</div>
-            <div className="muted">CSV · Excel · PDF · &lt; 50 MB</div>
+            <div className="formTitle">Add files</div>
+            <div className="muted">CSV, Excel, or PDF (up to 50 MB)</div>
           </div>
 
           <div className="field">
@@ -804,6 +1252,92 @@ function UploadsPage() {
           <div className="field">
             <label className="label">Notes (optional)</label>
             <textarea className="textarea" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+
+          <div className="field">
+            <label className="label">What should we do with the file?</label>
+            <Segments
+              value={processMode}
+              onChange={(value) => setProcessMode(value as ProcessMode)}
+              options={[
+                { value: "transform_gradebook", label: "Create clean report" },
+                { value: "append_record", label: "Add rows" },
+                { value: "delete_record", label: "Remove rows" },
+                { value: "custom_rules", label: "Custom request" },
+              ]}
+            />
+            <div className="muted" style={{ marginTop: 6 }}>
+              Pick what you want us to do before we build the report.
+            </div>
+            {processMode === "append_record" ? (
+              <div style={{ marginTop: 12 }}>
+                <textarea
+                  className="textarea"
+                  value={appendRowInput}
+                  onChange={(e) => {
+                    setAppendRowInput(e.target.value)
+                    setProcessError(null)
+                  }}
+                  placeholder='Paste the rows to add (JSON). Example: [{"student_id":"S001","score":95}]'
+                />
+                <div className="muted" style={{ marginTop: 4 }}>
+                  Use valid JSON. If unsure, leave this blank.
+                </div>
+              </div>
+            ) : null}
+            {processMode === "delete_record" ? (
+              <div style={{ marginTop: 12 }}>
+                <div className="muted" style={{ marginBottom: 6 }}>
+                  Tell us which rows to remove. Use the quick fields or paste JSON rules.
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <input
+                    className="input"
+                    style={{ flex: 1, minWidth: 160 }}
+                    value={deleteColumn}
+                    onChange={(e) => {
+                      setDeleteColumn(e.target.value)
+                      setProcessError(null)
+                    }}
+                    placeholder="Column name (example: student_id)"
+                  />
+                  <input
+                    className="input"
+                    style={{ flex: 1, minWidth: 160 }}
+                    value={deleteValue}
+                    onChange={(e) => {
+                      setDeleteValue(e.target.value)
+                      setProcessError(null)
+                    }}
+                    placeholder="Value to remove"
+                  />
+                </div>
+                <textarea
+                  className="textarea"
+                  style={{ marginTop: 10 }}
+                  value={deleteRulesInput}
+                  onChange={(e) => {
+                    setDeleteRulesInput(e.target.value)
+                    setProcessError(null)
+                  }}
+                  placeholder='Optional JSON rules. Example: [{"column":"class","value":"10-A"},{"column":"status","value":"absent"}]'
+                />
+              </div>
+            ) : null}
+            {processMode === "custom_rules" ? (
+              <div style={{ marginTop: 12 }}>
+                <textarea
+                  className="textarea"
+                  value={customInstructions}
+                  onChange={(e) => {
+                    setCustomInstructions(e.target.value)
+                    setProcessError(null)
+                  }}
+                  placeholder="Describe the change you want (example: highlight top performers)."
+                />
+              </div>
+            ) : null}
+            {processError ? <div className="errorLine">{processError}</div> : null}
           </div>
 
           <div className="field">
@@ -822,8 +1356,8 @@ function UploadsPage() {
                 {queuedFiles.length > 0
                   ? `Queued ${queuedFiles.length}/${MAX_UPLOAD_FILES} files${
                       filesAtLimit ? " (limit reached, remove one to add another)" : ""
-                    }. They'll run in parallel once started.`
-                  : `Choose up to ${MAX_UPLOAD_FILES} files. They'll run in parallel once you start the pipeline.`}
+                    }. They will be processed together once you start.`
+                  : `Choose up to ${MAX_UPLOAD_FILES} files. They will be processed together once you start.`}
               </div>
             </div>
             {fileError ? <div className="errorLine">{fileError}</div> : null}
@@ -859,28 +1393,36 @@ function UploadsPage() {
             {submitting
               ? "Starting..."
               : queuedFiles.length > 1
-              ? `Start ${queuedFiles.length} pipelines`
-              : "Start pipeline"}
+              ? `Start processing ${queuedFiles.length} files`
+              : "Start processing"}
           </button>
         </Card>
 
         <Card>
           <div className="formHeader">
-            <div className="formTitle">Current upload</div>
+            <div className="formTitle">Latest upload</div>
             {currentUpload?.upload_id ? (
-              <button className="ghostBtn" type="button" onClick={downloadReport} disabled={reportLoading}>
-                {reportLoading ? "Fetching..." : "Download report"}
-              </button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="ghostBtn" type="button" onClick={() => openUploadStages(currentUpload)} disabled={stagesLoading}>
+                  {stagesLoading ? "Loading stages..." : "View stages"}
+                </button>
+                <button className="ghostBtn" type="button" onClick={() => downloadReport("csv")} disabled={reportLoading}>
+                  {reportLoading ? "Fetching..." : "Download CSV"}
+                </button>
+                <button className="ghostBtn" type="button" onClick={() => downloadReport("pdf")} disabled={reportLoading}>
+                  {reportLoading ? "Fetching..." : "Download PDF"}
+                </button>
+              </div>
             ) : null}
           </div>
           {reportHint ? <div className="errorLine">{reportHint}</div> : null}
 
           {!currentUpload ? (
-            <div className="muted">After you upload a file, its status and report link will appear here.</div>
+            <div className="muted">After you upload, the status and report links will appear here.</div>
           ) : (
             <div className="currentUpload">
               <div className="row">
-                <span className="muted">Upload ID</span>
+                <span className="muted">File ID</span>
                 <span className="mono">{currentUpload.upload_id}</span>
               </div>
               <div className="row">
@@ -908,24 +1450,24 @@ function UploadsPage() {
               </div>
                 {currentRuns.length > 0 ? (
                   <div className="row">
-                    <span className="muted">Pipeline</span>
+                    <span className="muted">Processing steps</span>
                     <span className="mono">
                       {["standardize_results", "validate_results", "transform_gradebook", "generate_summary", "publish_results"].map(
                         (step) => {
                           const r = currentRuns.find((run) => run.job?.name === step || run.job_name === step)
                           const s = r?.status ?? "pending"
-                          return `${step.replace("_", " ")}: ${s}`
+                          return `${formatStepName(step)}: ${s}`
                         },
-                      ).join(" · ")}
+                      ).join(" | ")}
                     </span>
                   </div>
                 ) : null}
                 {currentIncident ? (
                   <div className="row">
-                    <span className="muted">Last incident</span>
+                  <span className="muted">Last issue</span>
                     <span title={String(currentIncident.error ?? "")}>
-                      {currentIncident.state === "resolved" ? "Resolved" : "Open"} ·{" "}
-                      {currentIncident.is_known ? "Known pattern" : "Unknown"} ·{" "}
+                      {currentIncident.state === "resolved" ? "Resolved" : "Open"} |{" "}
+                      {currentIncident.is_known ? "Known issue" : "Unknown"} |{" "}
                       {clampText(currentIncident.error ?? "", 80) || "—"}
                     </span>
                   </div>
@@ -934,6 +1476,123 @@ function UploadsPage() {
           )}
         </Card>
       </div>
+
+      <Card style={{ marginTop: 16 }}>
+        <div className="tableHeader">
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <div className="muted">Files you've uploaded</div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Open a file to see each stage and its notes.
+            </div>
+          </div>
+          <button className="ghostBtn" type="button" onClick={() => setRecentRefresh((x) => x + 1)} disabled={recentLoading}>
+            {recentLoading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
+        {recentError ? <div className="errorLine">{recentError}</div> : null}
+        <div className="tableWrapper">
+          <div className="table">
+            <div className="tHead">
+              <div>File</div>
+              <div>Status</div>
+              <div>Received</div>
+              <div>Progress</div>
+              <div>Actions</div>
+            </div>
+            {recentUploads.length === 0 ? (
+              <div className="muted" style={{ paddingTop: 10 }}>
+                No files uploaded yet.
+              </div>
+            ) : (
+              recentUploads.map((upload) => {
+                const summary = summarizeSteps(upload.latestRun?.details)
+                const progress = stageProgressLabel(upload, summary)
+                const progressLabel = clampText(progress, 80)
+                return (
+                  <div className="tRow" key={upload.upload_id ?? upload.id ?? Math.random()}>
+                    <div title={upload.filename || ""}>{upload.filename || "Untitled file"}</div>
+                    <div>
+                      <span
+                        className={cx(
+                          "statusChip",
+                          upload.status === "failed" ? "bad" : upload.status === "published" ? "ok" : "",
+                        )}
+                      >
+                        {upload.status || "pending"}
+                      </span>
+                    </div>
+                    <div>{fmtDate(upload.received_at)}</div>
+                    <div title={summary || progress}>{progressLabel}</div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button className="ghostBtn ghostBtnSmall" type="button" onClick={() => openUploadStages(upload)}>
+                        View stages
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {stagesModal ? (
+        <DetailModal
+          title="File stages"
+          subtitle={
+            <span className="muted">
+              {stagesModal.upload?.filename ? `${stagesModal.upload.filename} | ` : ""}File{" "}
+              {stagesModal.upload?.upload_id ? String(stagesModal.upload.upload_id).slice(0, 8) : "-"}
+            </span>
+          }
+          onClose={closeUploadStages}
+        >
+          {stagesError ? <div className="errorLine">{stagesError}</div> : null}
+          {stagesLoading ? (
+            <div className="muted">Loading stage details...</div>
+          ) : stagesModal.steps.length === 0 ? (
+            <div className="muted">No stages recorded for this file yet.</div>
+          ) : (
+            <div className="stepList">
+              {stagesModal.steps.map((step: any) => {
+                const stepKey = `${step.name ?? "step"}-${step.started_at ?? ""}`
+                return (
+                  <div className="stepRow" key={`${stagesModal.upload?.upload_id ?? "file"}-${stepKey}`}>
+                    <div>
+                      <div className="stepName">{formatStepName(step.name)}</div>
+                      <div className="muted">{stepDescription(step.name)}</div>
+                      <div className="mono">
+                        {fmtDate(step.started_at)} to {fmtDate(step.finished_at)}
+                      </div>
+                    </div>
+                    <div className="stepActions">
+                      <span
+                        className={cx(
+                          "statusChip",
+                          step.status === "failed" ? "bad" : step.status === "success" ? "ok" : "",
+                        )}
+                      >
+                        {step.status}
+                      </span>
+                      <button
+                        className="ghostBtn ghostBtnSmall"
+                        type="button"
+                        onClick={() =>
+                          setStageDetail(buildStageDetail(step, stagesModal.steps, stagesModal.run, stagesModal.upload))
+                        }
+                      >
+                        View stage
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </DetailModal>
+      ) : null}
+
+      {stageDetail ? <StageDetailModal stage={stageDetail} onClose={() => setStageDetail(null)} /> : null}
     </div>
   )
 }
@@ -949,6 +1608,7 @@ function JobRunsPage() {
   const [selectedIncident, setSelectedIncident] = useState<any | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [stageDetail, setStageDetail] = useState<StageDetailPayload | null>(null)
   const selectedSteps = selectedRun && Array.isArray(selectedRun.details?.steps) ? selectedRun.details.steps : []
   const selectedUploadId =
     selectedRun && (selectedRun.upload?.upload_id ?? selectedRun.upload_id ?? (typeof selectedRun.upload === "string" ? selectedRun.upload : null))
@@ -976,7 +1636,7 @@ function JobRunsPage() {
         if (!mounted) return
         setCounts({ total: 0, queued: 0, running: 0, success: 0, failed: 0, retrying: 0 })
         setRows([])
-        setErr("Failed to load job runs. Check /api/job-runs/")
+        setErr("Couldn't load processing history. Please refresh.")
       }
     }
     load()
@@ -999,7 +1659,7 @@ function JobRunsPage() {
       const list = unwrapList<any>(res)
       setSelectedIncident(list[0] ?? null)
     } catch {
-      setDetailError("Failed to load incident details for this run.")
+      setDetailError("Couldn't load issue details for this run.")
     } finally {
       setDetailLoading(false)
     }
@@ -1012,12 +1672,16 @@ function JobRunsPage() {
     setDetailLoading(false)
   }
 
+  useEffect(() => {
+    setStageDetail(null)
+  }, [selectedRun?.run_id, selectedRun?.id])
+
   return (
     <div className="page pageTall">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Job runs</div>
-          <div className="pageSub">Live view of each stage for every upload.</div>
+          <div className="pageTitle">Processing history</div>
+          <div className="pageSub">See how each file is progressing and when it finishes.</div>
         </div>
         <button className="ghostBtn" type="button" onClick={() => setRefreshTick((x) => x + 1)}>
           Refresh
@@ -1052,7 +1716,7 @@ function JobRunsPage() {
 
       <Card>
         <div className="tableHeader">
-          <div className="muted">Latest job runs</div>
+          <div className="muted">Latest runs</div>
           <div className="muted">Auto-updating</div>
         </div>
         {err ? <div className="errorLine">{err}</div> : null}
@@ -1060,20 +1724,20 @@ function JobRunsPage() {
         <div className="tableWrapper">
           <div className="table">
             <div className="tHead">
-              <div>Run</div>
-              <div>Job</div>
+              <div>Run ID</div>
+              <div>Task</div>
               <div>Status</div>
-              <div>Upload ID</div>
-              <div>Steps</div>
+              <div>File ID</div>
+              <div>Summary</div>
               <div>Started</div>
               <div>Finished</div>
               <div>Duration</div>
-              <div>Exit</div>
+              <div>Result</div>
             </div>
 
             {rows.length === 0 ? (
               <div className="muted" style={{ paddingTop: 10 }}>
-                No job runs yet.
+                No runs yet.
               </div>
             ) : (
               rows.map((r) => {
@@ -1111,8 +1775,8 @@ function JobRunsPage() {
           title="Run details"
           subtitle={
             <span className="muted">
-              {selectedRun.job?.name ?? selectedRun.job_name ?? "—"} ·{" "}
-              {selectedUploadId ? String(selectedUploadId).slice(0, 8) : "no upload"}
+              {selectedRun.job?.name ?? selectedRun.job_name ?? "—"} |{" "}
+              {selectedUploadId ? String(selectedUploadId).slice(0, 8) : "no file"}
             </span>
           }
           onClose={closeRunDetail}
@@ -1124,7 +1788,7 @@ function JobRunsPage() {
               <div className="mono">{String(selectedRun.run_id ?? "—")}</div>
             </div>
             <div>
-              <div className="muted">Upload ID</div>
+              <div className="muted">File ID</div>
               <div className="mono">{selectedUploadId ? String(selectedUploadId) : "—"}</div>
             </div>
             <div>
@@ -1151,54 +1815,71 @@ function JobRunsPage() {
               <div className="mono">{selectedRun.duration_ms ? `${selectedRun.duration_ms} ms` : "—"}</div>
             </div>
             <div>
-              <div className="muted">Exit code</div>
+              <div className="muted">Result code</div>
               <div className="mono">{typeof selectedRun.exit_code === "number" ? selectedRun.exit_code : "—"}</div>
             </div>
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Pipeline steps</div>
+            <div className="detailTitle">Processing steps</div>
             {selectedSteps.length === 0 ? (
-              <div className="muted">No step data recorded for this run.</div>
+              <div className="muted">No step details recorded for this run.</div>
             ) : (
               <div className="stepList">
-                {selectedSteps.map((step: any) => (
-                  <div className="stepRow" key={`${selectedRun.run_id}-${step.name}-${step.started_at}`}>
-                    <div>
-                      <div className="stepName">{formatStepName(step.name)}</div>
-                      <div className="mono">
-                        {fmtDate(step.started_at)} → {fmtDate(step.finished_at)}
+                {selectedSteps.map((step: any) => {
+                  const stepKey = `${step.name ?? "step"}-${step.started_at ?? ""}`
+                  return (
+                    <div className="stepRow" key={`${selectedRun.run_id}-${stepKey}`}>
+                      <div>
+                        <div className="stepName">{formatStepName(step.name)}</div>
+                        <div className="muted">{stepDescription(step.name)}</div>
+                        <div className="mono">
+                          {fmtDate(step.started_at)} to {fmtDate(step.finished_at)}
+                        </div>
+                      </div>
+                      <div className="stepActions">
+                        <span
+                          className={cx(
+                            "statusChip",
+                            step.status === "failed" ? "bad" : step.status === "success" ? "ok" : "",
+                          )}
+                        >
+                          {step.status}
+                        </span>
+                        <button
+                          className="ghostBtn ghostBtnSmall"
+                          type="button"
+                          onClick={() =>
+                            setStageDetail(
+                              buildStageDetail(step, selectedSteps, selectedRun, { upload_id: selectedUploadId }),
+                            )
+                          }
+                        >
+                          View stage
+                        </button>
                       </div>
                     </div>
-                    <span
-                      className={cx(
-                        "statusChip",
-                        step.status === "failed" ? "bad" : step.status === "success" ? "ok" : "",
-                      )}
-                    >
-                      {step.status}
-                    </span>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Logs</div>
-            <pre className="detailLogs">{String(selectedRun.logs ?? "No logs captured for this run.")}</pre>
+            <div className="detailTitle">System notes</div>
+            <pre className="detailLogs">{String(selectedRun.logs ?? "No notes captured for this run.")}</pre>
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Incident</div>
+            <div className="detailTitle">Issue</div>
             {detailLoading ? (
-              <div className="muted">Loading related incident...</div>
+              <div className="muted">Loading related issue...</div>
             ) : !selectedIncident ? (
-              <div className="muted">No incident recorded for this run yet.</div>
+              <div className="muted">No issue recorded for this run yet.</div>
             ) : (
               <div className="incidentDetail">
                 <div className="detailRow">
-                  <span className="muted">Incident ID</span>
+                  <span className="muted">Issue ID</span>
                   <span className="mono">
                     {selectedIncident.incident_id
                       ? String(selectedIncident.incident_id).slice(0, 8)
@@ -1206,7 +1887,7 @@ function JobRunsPage() {
                   </span>
                 </div>
                 <div className="detailRow">
-                  <span className="muted">State</span>
+                  <span className="muted">Status</span>
                   <span
                     className={cx(
                       "statusChip",
@@ -1217,24 +1898,24 @@ function JobRunsPage() {
                   </span>
                 </div>
                 <div className="detailRow">
-                  <span className="muted">Known error</span>
+                  <span className="muted">Known issue type</span>
                   <span>
                     {selectedIncident.is_known
-                      ? selectedIncident.matched_known_error_name || "Known pattern"
+                      ? selectedIncident.matched_known_error_name || "Known issue type"
                       : "Unknown"}
                   </span>
                 </div>
                 <div className="detailRow">
-                  <span className="muted">Error</span>
-                  <span>{clampText(selectedIncident.error ?? "", 160) || "—"}</span>
+                  <span className="muted">What went wrong</span>
+                  <span>{clampText(selectedIncident.error ?? "", 160) || "-"}</span>
                 </div>
                 <div className="detailRow">
-                  <span className="muted">Root cause</span>
-                  <span>{selectedIncident.root_cause || "—"}</span>
+                  <span className="muted">What caused it</span>
+                  <span>{selectedIncident.root_cause || "-"}</span>
                 </div>
                 <div className="detailRow">
-                  <span className="muted">Corrective action</span>
-                  <span>{selectedIncident.corrective_action || "—"}</span>
+                  <span className="muted">How we fixed it</span>
+                  <span>{selectedIncident.corrective_action || "-"}</span>
                 </div>
                 {selectedIncident.suggested_fix ? (
                   <div className="detailRow">
@@ -1247,6 +1928,8 @@ function JobRunsPage() {
           </div>
         </DetailModal>
       ) : null}
+
+      {stageDetail ? <StageDetailModal stage={stageDetail} onClose={() => setStageDetail(null)} /> : null}
     </div>
   )
 }
@@ -1291,7 +1974,7 @@ function IncidentsPage() {
         if (!mounted) return
         setCounts({ total: 0, open: 0, in_progress: 0, resolved: 0 })
         setRows([])
-        setLoadError("Failed to load incidents. Check /api/incidents/")
+        setLoadError("Couldn't load issues. Please refresh.")
       }
     }
     load()
@@ -1304,12 +1987,12 @@ function IncidentsPage() {
 
   async function createIncident() {
     if (!newUploadId.trim()) {
-      alert("Upload ID is required to create an incident.")
+      alert("File ID is required to create an issue.")
       return
     }
     const payload: any = {
       upload: newUploadId.trim(),
-      error: newErrorText.trim() || "Manual incident created from dashboard.",
+      error: newErrorText.trim() || "Manual issue created from dashboard.",
       severity: newSeverity,
       category: newCategory.trim() || undefined,
       impact_summary: newImpactSummary.trim() || undefined,
@@ -1327,7 +2010,7 @@ function IncidentsPage() {
       setNewAnalysisNotes("")
       setRefreshTick((x) => x + 1)
     } catch {
-      alert("Create incident failed. Ensure backend IncidentSerializer accepts upload and error.")
+      alert("Create issue failed. Please try again.")
     } finally {
       setActionBusy(null)
     }
@@ -1335,17 +2018,17 @@ function IncidentsPage() {
 
   async function assignIncident(incidentId?: string) {
     if (!incidentId) {
-      alert("Missing incident ID.")
+      alert("Missing issue ID.")
       return
     }
-    const assignee = prompt("Assign to (username):")
+    const assignee = prompt("Assign to (name):")
     if (!assignee) return
     try {
       setActionBusy(incidentId)
       await postJSON(`/api/incidents/${incidentId}/assign/`, { assignee })
       setRefreshTick((x) => x + 1)
     } catch {
-      alert("Assign failed. Backend must have /api/incidents/<id>/assign/ action.")
+      alert("Assign failed. Please try again.")
     } finally {
       setActionBusy(null)
     }
@@ -1353,12 +2036,12 @@ function IncidentsPage() {
 
   async function resolveIncident(incidentId?: string) {
     if (!incidentId) {
-      alert("Missing incident ID.")
+      alert("Missing issue ID.")
       return
     }
-    const root = prompt("Root cause (optional):") ?? ""
-    const action = prompt("Corrective action (optional):") ?? ""
-    const report = prompt("Resolution report (optional):") ?? ""
+    const root = prompt("What caused it (optional):") ?? ""
+    const action = prompt("How we fixed it (optional):") ?? ""
+    const report = prompt("Resolution summary (optional):") ?? ""
     try {
       setActionBusy(incidentId)
       await postJSON(`/api/incidents/${incidentId}/resolve/`, {
@@ -1368,7 +2051,7 @@ function IncidentsPage() {
       })
       setRefreshTick((x) => x + 1)
     } catch {
-      alert("Resolve failed. Backend must have /api/incidents/<id>/resolve/ action.")
+      alert("Resolve failed. Please try again.")
     } finally {
       setActionBusy(null)
     }
@@ -1376,12 +2059,12 @@ function IncidentsPage() {
 
   async function analyzeIncident(incidentId?: string) {
     if (!incidentId) {
-      alert("Missing incident ID.")
+      alert("Missing issue ID.")
       return
     }
     const severity = prompt("Severity (low/medium/high/critical):", "medium") || "medium"
-    const impact = prompt("Impact summary (optional):") || ""
-    const analysis = prompt("Analysis notes:", "") || ""
+    const impact = prompt("Who or what was affected (optional):") || ""
+    const analysis = prompt("Notes:", "") || ""
     try {
       setActionBusy(incidentId)
       await postJSON(`/api/incidents/${incidentId}/analyze/`, {
@@ -1399,7 +2082,7 @@ function IncidentsPage() {
 
   async function retryIncident(incidentId?: string) {
     if (!incidentId) {
-      alert("Missing incident ID.")
+      alert("Missing issue ID.")
       return
     }
     const notes = prompt("Retry notes (optional):") || ""
@@ -1408,7 +2091,7 @@ function IncidentsPage() {
       await postJSON(`/api/incidents/${incidentId}/retry/`, { notes })
       setRefreshTick((x) => x + 1)
     } catch {
-      alert("Retry failed. Check backend logs for details.")
+      alert("Retry failed. Please try again.")
     } finally {
       setActionBusy(null)
     }
@@ -1416,10 +2099,10 @@ function IncidentsPage() {
 
   async function archiveIncident(incidentId?: string) {
     if (!incidentId) {
-      alert("Missing incident ID.")
+      alert("Missing issue ID.")
       return
     }
-    const confirmArchive = confirm("Archive this incident? This will mark it resolved and hide it from the active list.")
+    const confirmArchive = confirm("Archive this issue? This will mark it resolved and hide it from the list.")
     if (!confirmArchive) return
     try {
       setActionBusy(incidentId)
@@ -1445,7 +2128,7 @@ function IncidentsPage() {
       const detail = await apiClient.incidents.get(String(id))
       setInspectingIncident(detail)
     } catch {
-      setIncidentDetailError("Failed to load latest incident details.")
+      setIncidentDetailError("Couldn't load latest issue details.")
     } finally {
       setIncidentDetailLoading(false)
     }
@@ -1461,15 +2144,15 @@ function IncidentsPage() {
     <div className="page pageTall">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Incidents</div>
-          <div className="pageSub">Failures create incidents. Track RCA and resolution.</div>
+          <div className="pageTitle">Issues</div>
+          <div className="pageSub">Problems found while processing files. Track and resolve them here.</div>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="ghostBtn" type="button" onClick={() => setRefreshTick((x) => x + 1)}>
             Refresh
           </button>
           <button className="primaryBtnSmall" type="button" onClick={() => setShowCreate(true)}>
-            + Create incident
+            + Create issue
           </button>
         </div>
       </div>
@@ -1498,7 +2181,7 @@ function IncidentsPage() {
 
       <Card>
         <div className="tableHeader">
-          <div className="muted">Latest incidents</div>
+          <div className="muted">Latest issues</div>
           <div className="muted">Auto-updating</div>
         </div>
         {loadError ? <div className="errorLine">{loadError}</div> : null}
@@ -1506,20 +2189,20 @@ function IncidentsPage() {
         <div className="tableWrapper">
           <div className="table">
             <div className="tHead">
-              <div>Incident</div>
-              <div>State</div>
+              <div>Issue ID</div>
+              <div>Status</div>
               <div>Severity</div>
               <div>Created</div>
-              <div>Upload</div>
+              <div>File</div>
               <div>Error</div>
               <div>Assignee</div>
-              <div>Known?</div>
+              <div>Known issue?</div>
               <div>Actions</div>
             </div>
 
             {rows.length === 0 ? (
               <div className="muted" style={{ paddingTop: 10 }}>
-                No incidents yet.
+                No issues yet.
               </div>
             ) : (
               rows.map((r) => {
@@ -1575,11 +2258,11 @@ function IncidentsPage() {
 
       {inspectingIncident ? (
         <DetailModal
-          title="Incident details"
+          title="Issue details"
           subtitle={
             inspectingIncident.upload?.upload_id ? (
               <span className="muted">
-                Upload {String(inspectingIncident.upload.upload_id).slice(0, 8)}
+                File {String(inspectingIncident.upload.upload_id).slice(0, 8)}
               </span>
             ) : (
               <span className="muted">{fmtDate(inspectingIncident.created_at)}</span>
@@ -1593,14 +2276,14 @@ function IncidentsPage() {
               type="button"
               onClick={() => analyzeIncident(String(inspectingIncident.incident_id))}
             >
-              Add analysis
+              Add notes
             </button>
             <button
               className="ghostBtn"
               type="button"
               onClick={() => retryIncident(String(inspectingIncident.incident_id))}
             >
-              Retry pipeline
+              Try again
             </button>
             <button
               className="ghostBtn"
@@ -1611,16 +2294,16 @@ function IncidentsPage() {
             </button>
           </div>
           {incidentDetailError ? <div className="errorLine">{incidentDetailError}</div> : null}
-          {incidentDetailLoading ? <div className="muted">Refreshing incident data...</div> : null}
+          {incidentDetailLoading ? <div className="muted">Refreshing issue data...</div> : null}
           <div className="detailGrid">
             <div>
-              <div className="muted">Incident ID</div>
+              <div className="muted">Issue ID</div>
               <div className="mono">
                 {String(inspectingIncident.incident_id ?? inspectingIncident.id ?? "—").slice(0, 8)}
               </div>
             </div>
             <div>
-              <div className="muted">State</div>
+              <div className="muted">Status</div>
               <span
                 className={cx(
                   "statusChip",
@@ -1641,7 +2324,7 @@ function IncidentsPage() {
               <div>{inspectingIncident.assignee ?? "Unassigned"}</div>
             </div>
             <div>
-              <div className="muted">Upload</div>
+              <div className="muted">File</div>
               <div className="mono">
                 {inspectingIncident.upload?.upload_id
                   ? String(inspectingIncident.upload.upload_id).slice(0, 8)
@@ -1649,7 +2332,7 @@ function IncidentsPage() {
               </div>
             </div>
             <div>
-              <div className="muted">Job run</div>
+              <div className="muted">Run</div>
               <div className="mono">
                 {inspectingIncident.job_run?.run_id
                   ? String(inspectingIncident.job_run.run_id).slice(0, 8)
@@ -1659,10 +2342,10 @@ function IncidentsPage() {
               </div>
             </div>
             <div>
-              <div className="muted">Known pattern</div>
+              <div className="muted">Known issue type</div>
               <div>
                 {inspectingIncident.is_known
-                  ? inspectingIncident.matched_known_error_name || "Known pattern"
+                  ? inspectingIncident.matched_known_error_name || "Known issue type"
                   : "Unknown"}
               </div>
             </div>
@@ -1675,7 +2358,7 @@ function IncidentsPage() {
               <div>{fmtDate(inspectingIncident.resolved_at)}</div>
             </div>
             <div>
-              <div className="muted">Retries</div>
+              <div className="muted">Attempts</div>
               <div>
                 {inspectingIncident.auto_retry_count ?? 0}/{inspectingIncident.max_auto_retries ?? 0}
               </div>
@@ -1691,27 +2374,27 @@ function IncidentsPage() {
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Error message</div>
-            <div className="detailTextBlock">{inspectingIncident.error || "No error captured."}</div>
+            <div className="detailTitle">What went wrong</div>
+            <div className="detailTextBlock">{inspectingIncident.error || "No details captured yet."}</div>
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Impact summary</div>
+            <div className="detailTitle">Who or what was affected</div>
             <div className="detailTextBlock">{inspectingIncident.impact_summary || "Not recorded yet."}</div>
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Root cause</div>
+            <div className="detailTitle">What caused it</div>
             <div className="detailTextBlock">{inspectingIncident.root_cause || "Not recorded yet."}</div>
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Corrective action</div>
+            <div className="detailTitle">How we fixed it</div>
             <div className="detailTextBlock">{inspectingIncident.corrective_action || "Not recorded yet."}</div>
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Analysis notes</div>
+            <div className="detailTitle">Notes</div>
             <div className="detailTextBlock">{inspectingIncident.analysis_notes || "Not recorded yet."}</div>
           </div>
 
@@ -1719,7 +2402,7 @@ function IncidentsPage() {
 
           {inspectingIncident.suggested_fix ? (
             <div className="detailSection">
-              <div className="detailTitle">Suggested fix</div>
+              <div className="detailTitle">Suggested next step</div>
               <div className="detailTextBlock">
                 {typeof inspectingIncident.suggested_fix === "string"
                   ? inspectingIncident.suggested_fix
@@ -1729,7 +2412,7 @@ function IncidentsPage() {
           ) : null}
 
           <div className="detailSection">
-            <div className="detailTitle">Resolution report</div>
+            <div className="detailTitle">How it was resolved</div>
             <div className="detailTextBlock">
               {inspectingIncident.resolution_report || "No resolution summary captured yet."}
             </div>
@@ -1751,7 +2434,7 @@ function IncidentsPage() {
                 ))}
               </div>
             ) : (
-              <div className="muted">Timeline will populate as the incident progresses.</div>
+              <div className="muted">Timeline will populate as the issue progresses.</div>
             )}
           </div>
         </DetailModal>
@@ -1760,20 +2443,20 @@ function IncidentsPage() {
       {showCreate ? (
         <div className="modalBackdrop" onClick={() => setShowCreate(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modalTitle">Create incident</div>
+            <div className="modalTitle">Create issue</div>
 
             <div className="field">
-              <label className="label">Upload ID</label>
+              <label className="label">File ID</label>
               <input
                 className="input"
                 value={newUploadId}
                 onChange={(e) => setNewUploadId(e.target.value)}
-                placeholder="UUID of the related upload"
+                placeholder="Paste the File ID from the Files page"
               />
             </div>
 
             <div className="field">
-              <label className="label">Error / description</label>
+              <label className="label">What happened</label>
               <textarea
                 className="textarea"
                 value={newErrorText}
@@ -1797,27 +2480,27 @@ function IncidentsPage() {
                 className="input"
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="e.g. validation, ingest"
+                placeholder="e.g. data check, missing file"
               />
             </div>
 
             <div className="field">
-              <label className="label">Impact summary (optional)</label>
+              <label className="label">Who or what was affected (optional)</label>
               <textarea
                 className="textarea"
                 value={newImpactSummary}
                 onChange={(e) => setNewImpactSummary(e.target.value)}
-                placeholder="Describe the blast radius"
+                placeholder="Describe who was impacted"
               />
             </div>
 
             <div className="field">
-              <label className="label">Initial analysis (optional)</label>
+              <label className="label">Notes (optional)</label>
               <textarea
                 className="textarea"
                 value={newAnalysisNotes}
                 onChange={(e) => setNewAnalysisNotes(e.target.value)}
-                placeholder="Any immediate clues or leads?"
+                placeholder="Any immediate observations?"
               />
             </div>
 
@@ -1883,7 +2566,7 @@ function TicketsPage() {
         if (!mounted) return
         setRows([])
         setCounts({ total: 0, open: 0, in_progress: 0, resolved: 0, closed: 0 })
-        setErr("Failed to load tickets. Check /api/tickets/")
+        setErr("Couldn't load tasks. Please refresh.")
       }
     }
     run()
@@ -1909,7 +2592,7 @@ function TicketsPage() {
       setNewIncidentId("")
       setRefreshTick((x) => x + 1)
     } catch (e) {
-      alert("Create ticket failed. Make sure backend TicketSerializer accepts incident field as UUID or nested relation.")
+      alert("Create task failed. Please try again.")
     } finally {
       setActionBusy(null)
     }
@@ -1923,7 +2606,7 @@ function TicketsPage() {
       await postJSON(`/api/tickets/${ticketId}/assign/`, { assignee })
       setRefreshTick((x) => x + 1)
     } catch {
-      alert("Assign failed. Backend must have /api/tickets/<id>/assign/ action.")
+      alert("Assign failed. Please try again.")
     } finally {
       setActionBusy(null)
     }
@@ -1936,7 +2619,7 @@ function TicketsPage() {
       await postJSON(`/api/tickets/${ticketId}/resolve/`, { resolution_type: "manual", resolution_notes: notes })
       setRefreshTick((x) => x + 1)
     } catch {
-      alert("Resolve failed. Backend must have /api/tickets/<id>/resolve/ action.")
+      alert("Resolve failed. Please try again.")
     } finally {
       setActionBusy(null)
     }
@@ -1944,12 +2627,12 @@ function TicketsPage() {
 
   async function analyzeLinkedIncident(incidentId?: string) {
     if (!incidentId) {
-      alert("Ticket is not linked to an incident.")
+      alert("Ticket is not linked to an issue.")
       return
     }
     const severity = prompt("Severity (low/medium/high/critical):", "medium") || "medium"
-    const impact = prompt("Impact summary (optional):") || ""
-    const analysis = prompt("Analysis notes:", "") || ""
+    const impact = prompt("Who or what was affected (optional):") || ""
+    const analysis = prompt("Notes:", "") || ""
     try {
       setActionBusy(incidentId)
       await postJSON(`/api/incidents/${incidentId}/analyze/`, {
@@ -1967,7 +2650,7 @@ function TicketsPage() {
 
   async function retryLinkedIncident(incidentId?: string) {
     if (!incidentId) {
-      alert("Ticket is not linked to an incident.")
+      alert("Ticket is not linked to an issue.")
       return
     }
     const notes = prompt("Retry notes (optional):") || ""
@@ -1976,7 +2659,7 @@ function TicketsPage() {
       await postJSON(`/api/incidents/${incidentId}/retry/`, { notes })
       setRefreshTick((x) => x + 1)
     } catch {
-      alert("Retry failed. Check backend logs for details.")
+      alert("Retry failed. Please try again.")
     } finally {
       setActionBusy(null)
     }
@@ -1986,8 +2669,8 @@ function TicketsPage() {
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Tickets</div>
-          <div className="pageSub">System and manual tickets tied to incidents. Assign, track and resolve issues from here.</div>
+          <div className="pageTitle">Tasks</div>
+          <div className="pageSub">Track follow-up tasks tied to issues and mark them complete.</div>
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
@@ -1995,7 +2678,7 @@ function TicketsPage() {
             Refresh
           </button>
           <button className="primaryBtnSmall" type="button" onClick={() => setShowCreate(true)}>
-            + Create Ticket
+            + Create task
           </button>
         </div>
       </div>
@@ -2027,24 +2710,24 @@ function TicketsPage() {
 
       <Card>
         <div className="tableHeader">
-          <div className="muted">Latest tickets</div>
+          <div className="muted">Latest tasks</div>
           <div className="muted">Auto-updating</div>
         </div>
 
         <div className="table">
           <div className="tHead">
-            <div>Ticket</div>
+            <div>Task</div>
             <div>Status</div>
-            <div>Source</div>
+            <div>Created by</div>
             <div>Assignee</div>
-            <div>Incident</div>
+            <div>Issue</div>
             <div>Title</div>
             <div>Actions</div>
           </div>
 
           {rows.length === 0 ? (
             <div className="muted" style={{ paddingTop: 10 }}>
-              No tickets yet.
+              No tasks yet.
             </div>
           ) : (
             rows.map((t) => {
@@ -2088,7 +2771,7 @@ function TicketsPage() {
                     onClick={(e) => {
                       e.stopPropagation()
                       if (!incidentRef) {
-                        alert("Ticket is not linked to an incident.")
+                        alert("Ticket is not linked to an issue.")
                         return
                       }
                       analyzeLinkedIncident(incidentRef)
@@ -2103,7 +2786,7 @@ function TicketsPage() {
                     onClick={(e) => {
                       e.stopPropagation()
                       if (!incidentRef) {
-                        alert("Ticket is not linked to an incident.")
+                        alert("Ticket is not linked to an issue.")
                         return
                       }
                       retryLinkedIncident(incidentRef)
@@ -2122,11 +2805,11 @@ function TicketsPage() {
       {showCreate ? (
         <div className="modalBackdrop" onClick={() => setShowCreate(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modalTitle">Create ticket</div>
+            <div className="modalTitle">Create task</div>
 
             <div className="field">
-              <label className="label">Incident ID (optional)</label>
-              <input className="input" value={newIncidentId} onChange={(e) => setNewIncidentId(e.target.value)} placeholder="UUID" />
+              <label className="label">Issue ID (optional)</label>
+              <input className="input" value={newIncidentId} onChange={(e) => setNewIncidentId(e.target.value)} placeholder="Paste Issue ID (optional)" />
             </div>
 
             <div className="field">
@@ -2158,11 +2841,12 @@ function ReportsPage() {
   const [jobRunId, setJobRunId] = useState("")
   const [hint, setHint] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [reportFormat, setReportFormat] = useState<DownloadFormat>("csv")
 
   async function download() {
     const id = jobRunId.trim()
     if (!id) {
-      setHint("Enter a job_run_id (UUID) first.")
+      setHint("Enter a Run ID first.")
       return
     }
     setHint(null)
@@ -2171,26 +2855,26 @@ function ReportsPage() {
       const run = await apiClient.jobRuns.get(id)
       const uploadId = run?.upload?.upload_id || run?.upload_id || run?.upload
       if (!uploadId) {
-        setHint("That run has no upload associated with it yet.")
+        setHint("This run has no file linked yet.")
         return
       }
       if (run.status !== "success") {
         if (run.status === "failed") {
-          setHint("Job run failed. Check Incidents for root cause before downloading.")
+          setHint("This run failed. Check Issues for details before downloading.")
           return
         }
-        setHint("Job run still in progress. Wait until status is success.")
+        setHint("This run is still processing. Please wait for it to finish.")
         return
       }
-      await ensureReportDownloaded(uploadId)
+      await ensureReportDownloaded(uploadId, { format: reportFormat })
       setHint(null)
     } catch (e: any) {
       if (typeof e?.message === "string") {
         setHint(e.message)
       } else if (e?.response?.status === 404) {
-        setHint("Job run not found. Use a valid run_id from the Job Runs tab.")
+        setHint("Run ID not found. Use one from the Processing tab.")
       } else {
-        setHint("Failed to download report. Ensure the job run is complete and try again.")
+        setHint("Failed to download report. Ensure the run is complete and try again.")
       }
     } finally {
       setLoading(false)
@@ -2202,40 +2886,52 @@ function ReportsPage() {
       <div className="pageHeader">
         <div>
           <div className="pageTitle">Reports</div>
-          <div className="pageSub">Download the CSV summary generated for an upload.</div>
+          <div className="pageSub">Download the report for a file in CSV or PDF.</div>
         </div>
       </div>
 
       <Card>
         <div className="sectionTitle">Download a report</div>
         <div className="muted" style={{ marginTop: 8 }}>
-          Paste a <span className="mono">job_run_id</span> and FlowBoard will find the related upload and fetch the CSV.
+          Paste the Run ID from Processing and BatchOps will fetch the related report.
         </div>
 
         <div className="field" style={{ marginTop: 12 }}>
-          <label className="label">Job Run ID</label>
+          <label className="label">Run ID</label>
           <input
             className="input"
             value={jobRunId}
             onChange={(e) => setJobRunId(e.target.value)}
-            placeholder="e.g. f4a6c63e-9d1b..."
+            placeholder="Example: f4a6c63e-9d1b..."
+          />
+        </div>
+
+        <div className="field" style={{ marginTop: 12 }}>
+          <label className="label">Format</label>
+          <Segments
+            value={reportFormat}
+            onChange={(value) => setReportFormat(value as DownloadFormat)}
+            options={[
+              { value: "csv", label: "CSV" },
+              { value: "pdf", label: "PDF" },
+            ]}
           />
         </div>
 
         {hint ? <div className="errorLine">{hint}</div> : null}
 
         <button className="primaryBtnSmall" type="button" onClick={download} disabled={loading}>
-          {loading ? "Fetching..." : "Download report"}
+          {loading ? "Fetching..." : `Download ${reportFormat.toUpperCase()}`}
         </button>
       </Card>
 
       <Card>
-        <div className="sectionTitle">Testing the pipeline</div>
+        <div className="sectionTitle">Quick steps</div>
         <ol className="steps">
-          <li>Go to Uploads.</li>
-          <li>Upload a CSV/Excel/PDF.</li>
-          <li>Wait until status becomes “published”.</li>
-          <li>Use “Download report”.</li>
+          <li>Go to Files.</li>
+          <li>Upload a CSV, Excel, or PDF.</li>
+          <li>Wait until the status shows "published".</li>
+          <li>Select "Download report".</li>
         </ol>
       </Card>
     </div>
@@ -2269,7 +2965,7 @@ function JobsPage() {
       syncDrafts(list)
       setJobError(null)
     } catch {
-      setJobError("Failed to load jobs. Ensure /api/jobs/ is reachable.")
+      setJobError("Couldn't load schedules. Please refresh.")
       setJobs([])
     } finally {
       setLoading(false)
@@ -2282,7 +2978,7 @@ function JobsPage() {
 
   async function createJob() {
     if (!newJobName.trim() || !newJobCallable.trim()) {
-      setJobError("Name and callable are required.")
+      setJobError("Task name and action are required.")
       return
     }
     let args: any[] = []
@@ -2291,7 +2987,7 @@ function JobsPage() {
         const parsed = JSON.parse(newJobArgs)
         args = Array.isArray(parsed) ? parsed : [parsed]
       } catch {
-        setJobError("Arguments must be valid JSON (e.g. [\"foo\", 123]).")
+        setJobError("If you provide details, they must be valid JSON (e.g. [\"foo\", 123]).")
         return
       }
     }
@@ -2315,7 +3011,7 @@ function JobsPage() {
       setJobError(null)
       loadJobs()
     } catch (e: any) {
-      setJobError(e?.response?.data?.error || "Create job failed. Check backend logs.")
+      setJobError(e?.response?.data?.error || "Create schedule failed. Please try again.")
     } finally {
       setSavingJobId(null)
     }
@@ -2329,7 +3025,7 @@ function JobsPage() {
       setJobError(null)
       loadJobs()
     } catch {
-      setJobError("Failed to update schedule. Ensure cron expression is valid.")
+      setJobError("Failed to update the schedule. Please check the format.")
     } finally {
       setSavingJobId(null)
     }
@@ -2340,9 +3036,9 @@ function JobsPage() {
       setSavingJobId(jobId)
       await apiClient.jobs.trigger(jobId, {})
       setJobError(null)
-      alert("Job queued successfully.")
+      alert("Task started successfully.")
     } catch {
-      setJobError("Failed to trigger job.")
+      setJobError("Failed to start the task.")
     } finally {
       setSavingJobId(null)
     }
@@ -2352,22 +3048,22 @@ function JobsPage() {
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Jobs</div>
-          <div className="pageSub">Schedule recurring tasks with cron expressions and run them on demand.</div>
+          <div className="pageTitle">Schedules</div>
+          <div className="pageSub">Set tasks to run automatically and start them anytime.</div>
         </div>
       </div>
 
       <div className="grid2">
         <Card>
           <div className="formHeader">
-            <div className="formTitle">New scheduled job</div>
+            <div className="formTitle">New scheduled task</div>
           </div>
           <div className="field">
-            <label className="label">Job name</label>
-            <input className="input" value={newJobName} onChange={(e) => setNewJobName(e.target.value)} placeholder="e.g. nightly_pipeline" />
+            <label className="label">Task name</label>
+            <input className="input" value={newJobName} onChange={(e) => setNewJobName(e.target.value)} placeholder="e.g. nightly_reports" />
           </div>
           <div className="field">
-            <label className="label">Python callable</label>
+            <label className="label">Action to run (advanced)</label>
             <input
               className="input"
               value={newJobCallable}
@@ -2376,7 +3072,7 @@ function JobsPage() {
             />
           </div>
           <div className="field">
-            <label className="label">Arguments (JSON array, optional)</label>
+            <label className="label">Optional details (JSON)</label>
             <textarea
               className="textarea"
               value={newJobArgs}
@@ -2385,24 +3081,24 @@ function JobsPage() {
             />
           </div>
           <div className="field">
-            <label className="label">Cron expression (optional)</label>
+            <label className="label">Schedule (optional)</label>
             <input className="input" value={newJobCron} onChange={(e) => setNewJobCron(e.target.value)} placeholder="*/5 * * * *" />
           </div>
           <button className="primaryBtn" type="button" disabled={savingJobId === "create"} onClick={createJob}>
-            {savingJobId === "create" ? "Creating..." : "Create job"}
+            {savingJobId === "create" ? "Creating..." : "Create schedule"}
           </button>
         </Card>
 
         <Card>
           <div className="formHeader">
-            <div className="formTitle">Configured jobs</div>
+            <div className="formTitle">Configured schedules</div>
             <button className="ghostBtn" type="button" onClick={loadJobs} disabled={loading}>
               {loading ? "Loading..." : "Refresh"}
             </button>
           </div>
           {jobError ? <div className="errorLine">{jobError}</div> : null}
           {jobs.length === 0 ? (
-            <div className="muted">No jobs configured yet.</div>
+            <div className="muted">No schedules configured yet.</div>
           ) : (
             <div className="jobList">
               {jobs.map((job: any) => {
@@ -2412,10 +3108,10 @@ function JobsPage() {
                     <div>
                       <div className="muted">Name</div>
                       <div className="mono">{job.name}</div>
-                      <div className="muted" style={{ fontSize: 12 }}>{job.job_type}</div>
+                      <div className="muted" style={{ fontSize: 12 }}>Automated task</div>
                     </div>
                     <div>
-                      <div className="muted">Callable</div>
+                      <div className="muted">Action</div>
                       <div className="mono">{job.config?.callable || "—"}</div>
                     </div>
                     <div>
@@ -2424,7 +3120,7 @@ function JobsPage() {
                         className="input"
                         value={scheduleDrafts[jobId] ?? ""}
                         onChange={(e) => setScheduleDrafts((draft) => ({ ...draft, [jobId]: e.target.value }))}
-                        placeholder="Cron expression"
+                        placeholder="Schedule format (cron)"
                       />
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -2434,7 +3130,7 @@ function JobsPage() {
                         disabled={savingJobId === jobId}
                         onClick={() => saveSchedule(jobId)}
                       >
-                        Save schedule
+                        Save
                       </button>
                       <button
                         className="ghostBtn"
@@ -2498,10 +3194,10 @@ export default function App() {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brandMark">FB</div>
+          <div className="brandMark">BO</div>
           <div>
-            <div className="brandName">FlowBoard.io</div>
-            <div className="brandSub">Batch Processing</div>
+            <div className="brandName">BatchOps</div>
+            <div className="brandSub">School workflows</div>
           </div>
         </div>
 
@@ -2521,9 +3217,9 @@ export default function App() {
         </nav>
 
         <div className="runtime">
-          <div className="runtimeTitle">Runtime Stack · v1</div>
-          <div className="runtimeText">Backend · Django · RQ · Postgres · Redis</div>
-          <div className="runtimeText">Metrics · Prometheus · Grafana</div>
+          <div className="runtimeTitle">Powered by BatchOps</div>
+          <div className="runtimeText">Secure processing and background jobs</div>
+          <div className="runtimeText">Health monitoring active</div>
         </div>
       </aside>
 

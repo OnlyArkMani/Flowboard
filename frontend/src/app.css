@@ -466,6 +466,10 @@ body{
 .detailModal{
   width:min(960px, 96vw);
 }
+.stageDetailModal{
+  width:min(1100px, 96vw);
+  max-height:95vh;
+}
 .modalHeader{
   display:flex;
   justify-content:space-between;
@@ -613,6 +617,12 @@ body{
   padding:10px 14px;
   background:#f8fafc;
 }
+.stepActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
 .stepName{
   font-weight:700;
 }
@@ -632,6 +642,12 @@ body{
 
 /* reports */
 .sectionTitle{font-weight:900; font-size:16px;}
+.plainList{
+  margin:8px 0 0;
+  padding-left:18px;
+  color:#475467;
+}
+.plainList li{margin:6px 0;}
 .steps{margin-top:10px; color:#334155;}
 .steps li{margin:8px 0;}
 
