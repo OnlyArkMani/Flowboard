@@ -1,0 +1,5 @@
+student_id,student_name,class,score,attendance_percent,status,recorded_at
+ADM001,Aarav Sharma,10-A,86.50,98.00,verified,2025-12-24T07:16:02.386729
+ADM002,Neha Patel,10-B,82.00,96.50,verified,2025-12-24T07:16:02.386729
+ADM003,Kabir Singh,9-A,79.20,94.00,pending,2025-12-24T07:16:02.386729
+ADM004,Isha Rao,9-B,88.10,97.00,verified,2025-12-24T07:16:02.386729

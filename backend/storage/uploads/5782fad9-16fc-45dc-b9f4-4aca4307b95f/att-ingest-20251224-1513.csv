@@ -1,0 +1,5 @@
+student_id,student_name,class,score,attendance_percent,status,recorded_at
+ATT101,Priya Nair,8-A,90.00,93.20,present,2025-12-24T07:16:02.386729
+ATT102,Arjun Das,8-B,84.00,88.90,present,2025-12-24T07:16:02.386729
+ATT103,Rohan Mehta,7-A,76.00,91.00,absent,2025-12-24T07:16:02.386729
+ATT104,Sara Ali,7-B,89.50,95.40,present,2025-12-24T07:16:02.386729

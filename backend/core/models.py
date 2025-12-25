@@ -69,6 +69,47 @@ class Upload(models.Model):
         return f"{self.filename} ({self.upload_id})"
 
 
+class DepartmentSource(models.Model):
+    name = models.CharField(max_length=120, unique=True)
+    code = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True, default="")
+    schedule_hint = models.CharField(max_length=120, blank=True, default="")
+    active = models.BooleanField(default=True)
+    last_ingested_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
+class DepartmentRecord(models.Model):
+    source = models.ForeignKey(DepartmentSource, on_delete=models.CASCADE, related_name="records")
+    student_id = models.CharField(max_length=40)
+    student_name = models.CharField(max_length=120)
+    class_name = models.CharField(max_length=50, blank=True, default="")
+    score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    attendance_percent = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=40, blank=True, default="")
+    recorded_at = models.DateTimeField(default=timezone.now)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-recorded_at"]
+        indexes = [
+            models.Index(fields=["source", "-recorded_at"]),
+            models.Index(fields=["student_id"]),
+        ]
+
+    def __str__(self):
+        return f"{self.student_id} ({self.source.code})"
+
+
 class Job(models.Model):
     JOB_TYPE_CHOICES = [
         ("shell", "Shell"),
