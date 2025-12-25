@@ -234,7 +234,7 @@ body{
 /* grids */
 .kpiGrid{
   display:grid;
-  grid-template-columns: repeat(4, minmax(0,1fr));
+  grid-template-columns: repeat(3, minmax(0,1fr));
   gap:16px;
   margin-top:14px;
 }
@@ -522,6 +522,26 @@ body{
   font-size:12px;
   color:#64748b;
 }
+.tRow .mono{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.taskCell{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.uploadsTable{
+  min-width:0;
+}
+.uploadsTable .tHead,
+.uploadsTable .tRow{
+  grid-template-columns: minmax(220px, 2.2fr) minmax(120px, 1fr) minmax(150px, 1.1fr) minmax(220px, 2fr) minmax(120px, 1fr);
+}
+.uploadsTable .tRow > div{
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
 
 /* detail panel under job runs */
 .detailGrid{
@@ -591,6 +611,9 @@ body{
   display:flex;
   flex-direction:column;
   gap:12px;
+  max-height:480px;
+  overflow:auto;
+  padding-right:6px;
 }
 .jobRow{
   border:1px solid var(--border);
@@ -600,6 +623,10 @@ body{
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap:12px;
   align-items:flex-start;
+}
+.jobRow .mono{
+  overflow-wrap:anywhere;
+  word-break:break-word;
 }
 .stepList{
   display:flex;

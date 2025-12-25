@@ -2,6 +2,12 @@ import axios, { type AxiosError, type AxiosInstance, type AxiosResponse } from "
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
 
+const DEFAULT_PAGE_SIZE = 5000
+
+function withPageSize(params?: any) {
+  return { page_size: DEFAULT_PAGE_SIZE, ...(params ?? {}) }
+}
+
 const api: AxiosInstance = axios.create({
   baseURL,
   headers: {
@@ -59,7 +65,7 @@ async function unwrapResults<T>(p: Promise<AxiosResponse<DRFPage<T>>>): Promise<
 export const apiClient = {
   uploads: {
     // returns array directly (so UI doesn't do page.data / page.results)
-    list: (params?: any) => unwrapResults<any>(api.get("/api/uploads/", { params })),
+    list: (params?: any) => unwrapResults<any>(api.get("/api/uploads/", { params: withPageSize(params) })),
     get: (id: string) => unwrap<any>(api.get(`/api/uploads/${id}/`)),
 
     upload: (formData: FormData) =>
@@ -80,12 +86,12 @@ export const apiClient = {
   },
 
   jobRuns: {
-    list: (params?: any) => unwrapResults<any>(api.get("/api/job-runs/", { params })),
+    list: (params?: any) => unwrapResults<any>(api.get("/api/job-runs/", { params: withPageSize(params) })),
     get: (id: string) => unwrap<any>(api.get(`/api/job-runs/${id}/`)),
   },
 
   incidents: {
-    list: (params?: any) => unwrapResults<any>(api.get("/api/incidents/", { params })),
+    list: (params?: any) => unwrapResults<any>(api.get("/api/incidents/", { params: withPageSize(params) })),
     get: (id: string) => unwrap<any>(api.get(`/api/incidents/${id}/`)),
     create: (data: any) => unwrap<any>(api.post("/api/incidents/", data)),
     update: (id: string, data: any) => unwrap<any>(api.patch(`/api/incidents/${id}/`, data)),

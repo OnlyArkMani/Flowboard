@@ -20,15 +20,16 @@ const NAV: Array<{
   icon: string
   pill: { text: string; tone: PillTone }
 }> = [
-  { key: "dashboard", label: "Home", icon: "D", pill: { text: "STATUS", tone: "live" } },
-  { key: "uploads", label: "Files", icon: "U", pill: { text: "UPLOADS", tone: "pipeline" } },
-  { key: "jobRuns", label: "Processing", icon: "J", pill: { text: "RUNS", tone: "execution" } },
-  { key: "incidents", label: "Issues", icon: "I", pill: { text: "HELP", tone: "rca" } },
-  { key: "reports", label: "Reports", icon: "R", pill: { text: "DOWNLOADS", tone: "exports" } },
-  { key: "jobs", label: "Schedules", icon: "S", pill: { text: "AUTOMATION", tone: "workflow" } },
+  { key: "dashboard", label: "Batch Home", icon: "D", pill: { text: "OVERVIEW", tone: "live" } },
+  { key: "uploads", label: "Batch Intake", icon: "U", pill: { text: "INTAKE", tone: "pipeline" } },
+  { key: "jobRuns", label: "Batch Runs", icon: "J", pill: { text: "RUNS", tone: "execution" } },
+  { key: "incidents", label: "Batch Issues", icon: "I", pill: { text: "ALERTS", tone: "rca" } },
+  { key: "reports", label: "Batch Reports", icon: "R", pill: { text: "OUTPUTS", tone: "exports" } },
+  { key: "jobs", label: "Batch Schedules", icon: "S", pill: { text: "AUTOMATION", tone: "workflow" } },
 ]
 
 const MAX_UPLOAD_FILES = 5
+const PAGE_STEP = 30
 const LAST_NAV_KEY = "batchops:lastNav"
 const LAST_UPLOAD_KEY = "batchops:lastUpload"
 const UPLOAD_QUEUE_DB = "batchopsUploadQueue"
@@ -212,7 +213,7 @@ function StageDetailModal({ stage, onClose }: { stage: StageDetailPayload; onClo
   const title = `${formatStepName(step.name)} stage`
   const subtitle = (
     <span className="muted">
-      {uploadName ? `${uploadName} | ` : ""}File {uploadId ? String(uploadId).slice(0, 8) : "-"}
+      {uploadName ? `${uploadName} | ` : ""}Intake {uploadId ? String(uploadId).slice(0, 8) : "-"}
       {runId ? ` | Run ${String(runId).slice(0, 8)}` : ""}
     </span>
   )
@@ -243,10 +244,10 @@ function StageDetailModal({ stage, onClose }: { stage: StageDetailPayload; onClo
 
       {hasFileDetails ? (
         <div className="detailSection">
-          <div className="detailTitle">File details</div>
+          <div className="detailTitle">Intake details</div>
           <div className="detailGrid">
             <div>
-              <div className="muted">File name</div>
+              <div className="muted">Intake file name</div>
               <div>{uploadName || "-"}</div>
             </div>
             <div>
@@ -258,7 +259,7 @@ function StageDetailModal({ stage, onClose }: { stage: StageDetailPayload; onClo
               <div>{processLabel}</div>
             </div>
             <div>
-              <div className="muted">File status</div>
+              <div className="muted">Intake status</div>
               <span className={cx("statusChip", fileStatus === "failed" ? "bad" : fileStatus === "published" ? "ok" : "")}>
                 {fileStatus || "-"}
               </span>
@@ -292,7 +293,7 @@ function StageDetailModal({ stage, onClose }: { stage: StageDetailPayload; onClo
 
       {fileNotes ? (
         <div className="detailSection">
-          <div className="detailTitle">File notes</div>
+          <div className="detailTitle">Intake notes</div>
           <div className="detailTextBlock">{fileNotes}</div>
         </div>
       ) : null}
@@ -367,6 +368,55 @@ function fmtDate(s?: string) {
   }
 }
 
+function parseDateOnly(value?: string) {
+  if (!value) return null
+  const parts = value.split("-").map((part) => Number(part))
+  if (parts.length !== 3) return null
+  const [year, month, day] = parts
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+function parseMonthOnly(value?: string) {
+  if (!value) return null
+  const parts = value.split("-").map((part) => Number(part))
+  if (parts.length !== 2) return null
+  const [year, month] = parts
+  if (!year || !month) return null
+  return { year, month }
+}
+
+function getLocalDate(input?: string) {
+  const parsed = parseDateInput(input)
+  if (!parsed || Number.isNaN(parsed.getTime())) return null
+  const istDate = convertToIST(parsed)
+  return new Date(istDate.getFullYear(), istDate.getMonth(), istDate.getDate())
+}
+
+function getLocalDateParts(input?: string) {
+  const localDate = getLocalDate(input)
+  if (!localDate) return null
+  return {
+    year: localDate.getFullYear(),
+    month: localDate.getMonth() + 1,
+    day: localDate.getDate(),
+    weekday: localDate.getDay(),
+  }
+}
+
+function getLocalDateTime(input?: string) {
+  const parsed = parseDateInput(input)
+  if (!parsed || Number.isNaN(parsed.getTime())) return null
+  return convertToIST(parsed)
+}
+
+function isWithinDays(input: string | undefined, days: number) {
+  const dt = getLocalDateTime(input)
+  if (!dt) return false
+  const now = convertToIST(new Date())
+  return now.getTime() - dt.getTime() <= days * 24 * 60 * 60 * 1000
+}
+
 function clampText(s: any, n = 120) {
   const t = String(s ?? "")
   if (t.length <= n) return t
@@ -377,6 +427,13 @@ function formatDuration(ms?: number | null) {
   if (typeof ms !== "number" || Number.isNaN(ms)) return "-"
   if (ms < 1000) return `${ms} ms`
   return `${(ms / 1000).toFixed(1)} sec`
+}
+
+function formatDurationShort(ms?: number | null) {
+  if (typeof ms !== "number" || Number.isNaN(ms)) return "-"
+  if (ms < 1000) return `${ms} ms`
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)} sec`
+  return `${(ms / 60000).toFixed(1)} min`
 }
 
 function formatFileSize(bytes?: number | null) {
@@ -677,8 +734,11 @@ function DashboardPage() {
   const [metricsWarning, setMetricsWarning] = useState<string | null>(null)
 
   const [todayUploads, setTodayUploads] = useState<number>(0)
+  const [failedRecent, setFailedRecent] = useState<number>(0)
+  const [activeRuns, setActiveRuns] = useState<number>(0)
+  const [avgRunTime, setAvgRunTime] = useState<string>("—")
+  const [activeSchedules, setActiveSchedules] = useState<number>(0)
   const [openIncidents, setOpenIncidents] = useState<number>(0)
-  const [openIncidentTasks, setOpenIncidentTasks] = useState<number>(0)
   const [lastMttr, setLastMttr] = useState<string>("—")
 
   const [health, setHealth] = useState<Record<string, string> | null>(null)
@@ -689,27 +749,39 @@ function DashboardPage() {
     async function load() {
       // KPIs from existing endpoints
       try {
-        const [uploadsRes, incidentsRes] = await Promise.all([
+        const [uploadsRes, incidentsRes, runsRes, jobsRes] = await Promise.all([
           apiClient.uploads.list({ ordering: "-received_at" }),
-          apiClient.incidents.list({ state: "open", ordering: "-created_at" }),
+          apiClient.incidents.list({ ordering: "-created_at" }),
+          apiClient.jobRuns.list({ ordering: "-started_at" }),
+          apiClient.jobs.list(),
         ])
         if (!mounted) return
 
         const uploads = unwrapList<any>(uploadsRes)
         const incidents = unwrapList<any>(incidentsRes)
+        const runs = unwrapList<any>(runsRes)
+        const jobs = unwrapList<any>(jobsRes)
 
-        const today = new Date()
-        const yyyy = today.getFullYear()
-        const mm = String(today.getMonth() + 1).padStart(2, "0")
-        const dd = String(today.getDate()).padStart(2, "0")
-        const prefix = `${yyyy}-${mm}-${dd}`
+        const now = convertToIST(new Date())
+        const todayKey = {
+          year: now.getFullYear(),
+          month: now.getMonth() + 1,
+          day: now.getDate(),
+        }
+        const isToday = (value?: string) => {
+          const parts = getLocalDateParts(value)
+          if (!parts) return false
+          return parts.year === todayKey.year && parts.month === todayKey.month && parts.day === todayKey.day
+        }
 
-        setTodayUploads(uploads.filter((u) => String(u.received_at ?? "").startsWith(prefix)).length)
-        setOpenIncidents(incidents.length)
-        setOpenIncidentTasks(incidents.length)
+        setTodayUploads(uploads.filter((u) => isToday(u.received_at)).length)
+        setFailedRecent(uploads.filter((u) => u.status === "failed" && isWithinDays(u.received_at, 7)).length)
+        setOpenIncidents(incidents.filter((r) => r.state === "open" || r.state === "in_progress").length)
+        setActiveRuns(runs.filter((r) => ["running", "queued", "retrying"].includes(String(r.status))).length)
+        setActiveSchedules(jobs.filter((job) => Boolean(job.schedule_cron)).length)
 
-        // last MTTR: latest resolved ticket (best-effort)
-        const resolved = [] as any[] // MTTR from incidents could be added later
+        // last MTTR: latest resolved incident (best-effort)
+        const resolved = incidents.filter((r) => r.state === "resolved" && r.resolved_at)
         if (resolved.length > 0) {
           resolved.sort((a, b) => String(b.resolved_at).localeCompare(String(a.resolved_at)))
           const t = resolved[0]
@@ -719,6 +791,15 @@ function DashboardPage() {
           setLastMttr(`${mins} min`)
         } else {
           setLastMttr("—")
+        }
+
+        const completedRuns = runs.filter((r) => typeof r.duration_ms === "number" && r.duration_ms > 0)
+        const recentRuns = completedRuns.slice(0, 10)
+        if (recentRuns.length > 0) {
+          const avgMs = Math.round(recentRuns.reduce((acc, r) => acc + r.duration_ms, 0) / recentRuns.length)
+          setAvgRunTime(formatDurationShort(avgMs))
+        } else {
+          setAvgRunTime("—")
         }
       } catch {
         // ignore
@@ -765,49 +846,58 @@ function DashboardPage() {
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Dashboard</div>
-          <div className="pageSub">A simple snapshot of files, issues, and overall system status.</div>
+          <div className="pageTitle">Batch overview</div>
+          <div className="pageSub">A simple snapshot of batch intake, issues, and system status.</div>
           {metricsWarning ? <div className="warnPill">Warning: {metricsWarning}</div> : null}
         </div>
 
         <div className="rightHeader">
           <div className="pipelinePill">
-            <span className="dot" /> <span className="muted">Processing idle</span>
-            <span className="muted">Waiting for new files</span>
+            <span className="dot" />{" "}
+            <span className="muted">{activeRuns > 0 ? "Batch engine busy" : "Batch engine idle"}</span>
+            <span className="muted">
+              {activeRuns > 0 ? `${activeRuns} active run(s)` : "Waiting for new batches"}
+            </span>
           </div>
         </div>
       </div>
 
       <div className="kpiGrid">
         <Card>
-          <KpiCard label="TODAY'S FILES" value={todayUploads} hint="Files received today" />
+          <KpiCard label="TODAY'S BATCHES" value={todayUploads} hint="Batch intakes today" />
         </Card>
         <Card>
-          <KpiCard label="OPEN ISSUES" value={openIncidents} hint="Need attention" />
+          <KpiCard label="FAILED (7 DAYS)" value={failedRecent} hint="Batches needing a re-run" />
         </Card>
         <Card>
-          <KpiCard label="OPEN TASKS" value={openIncidentTasks} hint="Work still in progress" />
+          <KpiCard label="AVG RUN TIME" value={avgRunTime} hint="Last 10 completed runs" />
         </Card>
         <Card>
-          <KpiCard label="LAST RESOLUTION TIME" value={lastMttr} hint="Last issue closed" />
+          <KpiCard label="OPEN BATCH ISSUES" value={openIncidents} hint="Need attention" />
+        </Card>
+        <Card>
+          <KpiCard label="ACTIVE SCHEDULES" value={activeSchedules} hint="Jobs on a timer" />
+        </Card>
+        <Card>
+          <KpiCard label="LAST RESOLUTION TIME" value={lastMttr} hint="Last batch issue closed" />
         </Card>
       </div>
 
       <div className="grid2">
         <Card>
-          <CardTitle title="How files are handled" right={<span className="miniPill">Upload + Check + Improve + Share</span>} />
+          <CardTitle title="How batches are handled" right={<span className="miniPill">Intake + Check + Improve + Share</span>} />
           <div className="pipelineBoxes">
             <div className="pipelineBox">
-              <div className="pipelineBoxTitle">Upload</div>
-              <div className="pipelineBoxText">Files arrive and wait their turn.</div>
+              <div className="pipelineBoxTitle">Intake</div>
+              <div className="pipelineBoxText">Batches arrive and wait their turn.</div>
             </div>
             <div className="pipelineBox">
               <div className="pipelineBoxTitle">Check & clean</div>
-              <div className="pipelineBoxText">We verify the data and tidy it up.</div>
+              <div className="pipelineBoxText">We verify the batch data and tidy it up.</div>
             </div>
             <div className="pipelineBox">
-              <div className="pipelineBoxTitle">Ready to share</div>
-              <div className="pipelineBoxText">Reports are prepared for download.</div>
+              <div className="pipelineBoxTitle">Ready to deliver</div>
+              <div className="pipelineBoxText">Batch reports are prepared for download.</div>
             </div>
           </div>
         </Card>
@@ -832,7 +922,7 @@ function DashboardPage() {
       </div>
 
       <Card style={{ marginTop: 16 }}>
-        <div className="sectionTitle">Everyday automations for schools</div>
+        <div className="sectionTitle">Batch automations for schools</div>
         <ul className="plainList">
           <li>Send attendance reminders to students or parents.</li>
           <li>Send a daily system status summary to admins.</li>
@@ -874,6 +964,11 @@ function UploadsPage() {
   const [recentLoading, setRecentLoading] = useState(false)
   const [recentError, setRecentError] = useState<string | null>(null)
   const [recentRefresh, setRecentRefresh] = useState(0)
+  const [recentQuery, setRecentQuery] = useState("")
+  const [recentStatusFilter, setRecentStatusFilter] = useState("all")
+  const [recentFromDate, setRecentFromDate] = useState("")
+  const [recentToDate, setRecentToDate] = useState("")
+  const [visibleUploadCount, setVisibleUploadCount] = useState(PAGE_STEP)
   const [stagesModal, setStagesModal] = useState<{ upload: any; run: any; steps: any[] } | null>(null)
   const [stagesLoading, setStagesLoading] = useState(false)
   const [stagesError, setStagesError] = useState<string | null>(null)
@@ -988,6 +1083,10 @@ function UploadsPage() {
   }, [processMode])
 
   useEffect(() => {
+    setVisibleUploadCount(PAGE_STEP)
+  }, [recentQuery, recentStatusFilter, recentFromDate, recentToDate, recentUploads.length])
+
+  useEffect(() => {
     let mounted = true
     async function loadRecent() {
       try {
@@ -1034,6 +1133,30 @@ function UploadsPage() {
       clearInterval(t)
     }
   }, [currentUpload?.upload_id, recentRefresh])
+
+  const recentQueryValue = recentQuery.trim().toLowerCase()
+  const recentStartDate = parseDateOnly(recentFromDate)
+  const recentEndDate = parseDateOnly(recentToDate)
+  const filteredUploads = recentUploads.filter((upload) => {
+    const status = String(upload.status || "").toLowerCase()
+    if (recentStatusFilter !== "all" && status !== recentStatusFilter) return false
+    if (recentQueryValue) {
+      const name = String(upload.filename ?? "").toLowerCase()
+      const department = String(upload.department ?? "").toLowerCase()
+      if (!name.includes(recentQueryValue) && !department.includes(recentQueryValue)) return false
+    }
+    if (recentStartDate || recentEndDate) {
+      const targetDate = getLocalDate(upload.received_at)
+      if (!targetDate) return false
+      if (recentStartDate && targetDate < recentStartDate) return false
+      if (recentEndDate && targetDate > recentEndDate) return false
+    }
+    return true
+  })
+  const visibleUploads = filteredUploads.slice(0, visibleUploadCount)
+  const showNoUploads = recentUploads.length === 0
+  const showNoUploadMatches = !showNoUploads && filteredUploads.length === 0
+  const showUploadLoadMore = filteredUploads.length > visibleUploads.length
 
   function buildProcessingConfig() {
     if (processMode === "append_record") {
@@ -1155,7 +1278,7 @@ function UploadsPage() {
       if (successes.length > 0) {
         setCurrentUpload(successes[successes.length - 1])
         if (successes.length > 1) {
-          alert(`Queued ${successes.length} uploads. Monitor their progress in Processing.`)
+          alert(`Queued ${successes.length} uploads. Monitor their progress in Batch Runs.`)
         }
       }
 
@@ -1214,7 +1337,7 @@ function UploadsPage() {
       setStagesModal({ upload, run: latestRun, steps })
     } catch {
       if (cachedSteps.length === 0) {
-        setStagesError("Couldn't load stages for this file.")
+      setStagesError("Couldn't load stages for this batch.")
       }
     } finally {
       setStagesLoading(false)
@@ -1232,15 +1355,15 @@ function UploadsPage() {
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Files</div>
-          <div className="pageSub">Upload student files and we'll prepare clear reports for you.</div>
+          <div className="pageTitle">Batch intake</div>
+          <div className="pageSub">Upload batch files and we'll prepare clear reports for you.</div>
         </div>
       </div>
 
       <div className="grid2">
         <Card>
           <div className="formHeader">
-            <div className="formTitle">Add files</div>
+            <div className="formTitle">Add batch files</div>
             <div className="muted">CSV, Excel, or PDF (up to 50 MB)</div>
           </div>
 
@@ -1341,7 +1464,7 @@ function UploadsPage() {
           </div>
 
           <div className="field">
-            <label className="label">Files</label>
+            <label className="label">Batch files</label>
             <div className="fileBox">
               <input
                 ref={fileInputRef}
@@ -1354,17 +1477,17 @@ function UploadsPage() {
               />
               <div className="muted">
                 {queuedFiles.length > 0
-                  ? `Queued ${queuedFiles.length}/${MAX_UPLOAD_FILES} files${
+                  ? `Queued ${queuedFiles.length}/${MAX_UPLOAD_FILES} batch files${
                       filesAtLimit ? " (limit reached, remove one to add another)" : ""
                     }. They will be processed together once you start.`
-                  : `Choose up to ${MAX_UPLOAD_FILES} files. They will be processed together once you start.`}
+                  : `Choose up to ${MAX_UPLOAD_FILES} batch files. They will be processed together once you start.`}
               </div>
             </div>
             {fileError ? <div className="errorLine">{fileError}</div> : null}
             {queuedFiles.length > 0 ? (
               <div className="fileList">
                 <div className="fileListHead">
-                  <div>File</div>
+                  <div>Batch file</div>
                   <div>Type</div>
                   <div>Size</div>
                   <div />
@@ -1393,14 +1516,14 @@ function UploadsPage() {
             {submitting
               ? "Starting..."
               : queuedFiles.length > 1
-              ? `Start processing ${queuedFiles.length} files`
-              : "Start processing"}
+              ? `Start batch processing ${queuedFiles.length} files`
+              : "Start batch processing"}
           </button>
         </Card>
 
         <Card>
           <div className="formHeader">
-            <div className="formTitle">Latest upload</div>
+            <div className="formTitle">Latest batch</div>
             {currentUpload?.upload_id ? (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button className="ghostBtn" type="button" onClick={() => openUploadStages(currentUpload)} disabled={stagesLoading}>
@@ -1422,7 +1545,7 @@ function UploadsPage() {
           ) : (
             <div className="currentUpload">
               <div className="row">
-                <span className="muted">File ID</span>
+                <span className="muted">Intake ID</span>
                 <span className="mono">{currentUpload.upload_id}</span>
               </div>
               <div className="row">
@@ -1450,7 +1573,7 @@ function UploadsPage() {
               </div>
                 {currentRuns.length > 0 ? (
                   <div className="row">
-                    <span className="muted">Processing steps</span>
+                    <span className="muted">Batch stages</span>
                     <span className="mono">
                       {["standardize_results", "validate_results", "transform_gradebook", "generate_summary", "publish_results"].map(
                         (step) => {
@@ -1480,31 +1603,73 @@ function UploadsPage() {
       <Card style={{ marginTop: 16 }}>
         <div className="tableHeader">
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <div className="muted">Files you've uploaded</div>
+            <div className="muted">Batch intakes</div>
             <div className="muted" style={{ fontSize: 12 }}>
-              Open a file to see each stage and its notes.
+              Open a batch to see each stage and its notes.
             </div>
           </div>
-          <button className="ghostBtn" type="button" onClick={() => setRecentRefresh((x) => x + 1)} disabled={recentLoading}>
-            {recentLoading ? "Refreshing..." : "Refresh"}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input
+              className="input"
+              style={{ minWidth: 200 }}
+              value={recentQuery}
+              onChange={(e) => setRecentQuery(e.target.value)}
+              placeholder="Search batches or department"
+            />
+            <select className="input" value={recentStatusFilter} onChange={(e) => setRecentStatusFilter(e.target.value)}>
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="published">Published</option>
+              <option value="failed">Failed</option>
+            </select>
+            <button className="ghostBtn" type="button" onClick={() => setRecentRefresh((x) => x + 1)} disabled={recentLoading}>
+              {recentLoading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          <div>
+            <div className="muted" style={{ fontSize: 12 }}>From</div>
+            <input className="input" type="date" value={recentFromDate} onChange={(e) => setRecentFromDate(e.target.value)} />
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12 }}>To</div>
+            <input className="input" type="date" value={recentToDate} onChange={(e) => setRecentToDate(e.target.value)} />
+          </div>
+          <button
+            className="ghostBtn"
+            type="button"
+            onClick={() => {
+              setRecentQuery("")
+              setRecentStatusFilter("all")
+              setRecentFromDate("")
+              setRecentToDate("")
+            }}
+          >
+            Clear filters
           </button>
         </div>
         {recentError ? <div className="errorLine">{recentError}</div> : null}
         <div className="tableWrapper">
-          <div className="table">
+          <div className="table uploadsTable">
             <div className="tHead">
-              <div>File</div>
+              <div>Batch file</div>
               <div>Status</div>
               <div>Received</div>
               <div>Progress</div>
               <div>Actions</div>
             </div>
-            {recentUploads.length === 0 ? (
+            {showNoUploads ? (
               <div className="muted" style={{ paddingTop: 10 }}>
-                No files uploaded yet.
+                No batch intakes yet.
+              </div>
+            ) : showNoUploadMatches ? (
+              <div className="muted" style={{ paddingTop: 10 }}>
+                No files match the current filters.
               </div>
             ) : (
-              recentUploads.map((upload) => {
+              visibleUploads.map((upload) => {
                 const summary = summarizeSteps(upload.latestRun?.details)
                 const progress = stageProgressLabel(upload, summary)
                 const progressLabel = clampText(progress, 80)
@@ -1534,14 +1699,26 @@ function UploadsPage() {
             )}
           </div>
         </div>
+        {!showNoUploads && filteredUploads.length > 0 ? (
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, alignItems: "center" }}>
+            <div className="muted">
+              Showing {Math.min(visibleUploadCount, filteredUploads.length)} of {filteredUploads.length}
+            </div>
+            {showUploadLoadMore ? (
+              <button className="ghostBtn" type="button" onClick={() => setVisibleUploadCount((c) => c + PAGE_STEP)}>
+                Load more
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </Card>
 
       {stagesModal ? (
         <DetailModal
-          title="File stages"
+          title="Batch stages"
           subtitle={
             <span className="muted">
-              {stagesModal.upload?.filename ? `${stagesModal.upload.filename} | ` : ""}File{" "}
+              {stagesModal.upload?.filename ? `${stagesModal.upload.filename} | ` : ""}Intake{" "}
               {stagesModal.upload?.upload_id ? String(stagesModal.upload.upload_id).slice(0, 8) : "-"}
             </span>
           }
@@ -1551,7 +1728,7 @@ function UploadsPage() {
           {stagesLoading ? (
             <div className="muted">Loading stage details...</div>
           ) : stagesModal.steps.length === 0 ? (
-            <div className="muted">No stages recorded for this file yet.</div>
+            <div className="muted">No stages recorded for this batch yet.</div>
           ) : (
             <div className="stepList">
               {stagesModal.steps.map((step: any) => {
@@ -1603,6 +1780,9 @@ function JobRunsPage() {
   const [rows, setRows] = useState<any[]>([])
   const [err, setErr] = useState<string | null>(null)
   const [refreshTick, setRefreshTick] = useState(0)
+  const [runDateFrom, setRunDateFrom] = useState("")
+  const [runDateTo, setRunDateTo] = useState("")
+  const [visibleRunCount, setVisibleRunCount] = useState(PAGE_STEP)
 
   const [selectedRun, setSelectedRun] = useState<any | null>(null)
   const [selectedIncident, setSelectedIncident] = useState<any | null>(null)
@@ -1614,29 +1794,43 @@ function JobRunsPage() {
     selectedRun && (selectedRun.upload?.upload_id ?? selectedRun.upload_id ?? (typeof selectedRun.upload === "string" ? selectedRun.upload : null))
 
   useEffect(() => {
+    setVisibleRunCount(PAGE_STEP)
+  }, [filter, runDateFrom, runDateTo])
+
+  useEffect(() => {
     let mounted = true
     async function load() {
       try {
         const res = await apiClient.jobRuns.list({ ordering: "-started_at" })
         const all = unwrapList<any>(res)
+        const startDate = parseDateOnly(runDateFrom)
+        const endDate = parseDateOnly(runDateTo)
+        const dateFiltered = all.filter((r) => {
+          if (!startDate && !endDate) return true
+          const targetDate = getLocalDate(r.started_at || r.finished_at || r.created_at)
+          if (!targetDate) return false
+          if (startDate && targetDate < startDate) return false
+          if (endDate && targetDate > endDate) return false
+          return true
+        })
         const c = {
-          total: all.length,
-          queued: all.filter((r) => r.status === "queued").length,
-          running: all.filter((r) => r.status === "running").length,
-          success: all.filter((r) => r.status === "success").length,
-          failed: all.filter((r) => r.status === "failed").length,
-          retrying: all.filter((r) => r.status === "retrying").length,
+          total: dateFiltered.length,
+          queued: dateFiltered.filter((r) => r.status === "queued").length,
+          running: dateFiltered.filter((r) => r.status === "running").length,
+          success: dateFiltered.filter((r) => r.status === "success").length,
+          failed: dateFiltered.filter((r) => r.status === "failed").length,
+          retrying: dateFiltered.filter((r) => r.status === "retrying").length,
         }
-        const filtered = filter === "all" ? all : all.filter((r) => r.status === filter)
+        const filtered = filter === "all" ? dateFiltered : dateFiltered.filter((r) => r.status === filter)
         if (!mounted) return
         setCounts(c)
-        setRows(filtered.slice(0, 30))
+        setRows(filtered)
         setErr(null)
       } catch {
         if (!mounted) return
         setCounts({ total: 0, queued: 0, running: 0, success: 0, failed: 0, retrying: 0 })
         setRows([])
-        setErr("Couldn't load processing history. Please refresh.")
+        setErr("Couldn't load batch runs. Please refresh.")
       }
     }
     load()
@@ -1645,7 +1839,7 @@ function JobRunsPage() {
       mounted = false
       clearInterval(t)
     }
-  }, [filter, refreshTick])
+  }, [filter, refreshTick, runDateFrom, runDateTo])
 
   async function loadDetails(run: any) {
     setSelectedRun(run)
@@ -1676,12 +1870,15 @@ function JobRunsPage() {
     setStageDetail(null)
   }, [selectedRun?.run_id, selectedRun?.id])
 
+  const visibleRuns = rows.slice(0, visibleRunCount)
+  const showRunLoadMore = rows.length > visibleRunCount
+
   return (
     <div className="page pageTall">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Processing history</div>
-          <div className="pageSub">See how each file is progressing and when it finishes.</div>
+          <div className="pageTitle">Batch runs</div>
+          <div className="pageSub">See how each batch run is progressing and when it finishes.</div>
         </div>
         <button className="ghostBtn" type="button" onClick={() => setRefreshTick((x) => x + 1)}>
           Refresh
@@ -1712,11 +1909,31 @@ function JobRunsPage() {
             { value: "retrying", label: "Retrying" },
           ]}
         />
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12, alignItems: "flex-end" }}>
+          <div>
+            <div className="muted" style={{ fontSize: 12 }}>From</div>
+            <input className="input" type="date" value={runDateFrom} onChange={(e) => setRunDateFrom(e.target.value)} />
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12 }}>To</div>
+            <input className="input" type="date" value={runDateTo} onChange={(e) => setRunDateTo(e.target.value)} />
+          </div>
+          <button
+            className="ghostBtn"
+            type="button"
+            onClick={() => {
+              setRunDateFrom("")
+              setRunDateTo("")
+            }}
+          >
+            Clear dates
+          </button>
+        </div>
       </Card>
 
       <Card>
         <div className="tableHeader">
-          <div className="muted">Latest runs</div>
+          <div className="muted">Latest batch runs</div>
           <div className="muted">Auto-updating</div>
         </div>
         {err ? <div className="errorLine">{err}</div> : null}
@@ -1724,11 +1941,11 @@ function JobRunsPage() {
         <div className="tableWrapper">
           <div className="table">
             <div className="tHead">
-              <div>Run ID</div>
-              <div>Task</div>
+              <div>Batch run ID</div>
+              <div>Batch job</div>
               <div>Status</div>
-              <div>File ID</div>
-              <div>Summary</div>
+              <div>Intake ID</div>
+              <div>Batch summary</div>
               <div>Started</div>
               <div>Finished</div>
               <div>Duration</div>
@@ -1737,10 +1954,10 @@ function JobRunsPage() {
 
             {rows.length === 0 ? (
               <div className="muted" style={{ paddingTop: 10 }}>
-                No runs yet.
+                No batch runs yet.
               </div>
             ) : (
-              rows.map((r) => {
+              visibleRuns.map((r) => {
                 const uploadId =
                   r.upload?.upload_id ??
                   r.upload_id ??
@@ -1748,7 +1965,7 @@ function JobRunsPage() {
                 return (
                   <div className="tRow" key={r.run_id ?? r.id ?? Math.random()} onClick={() => loadDetails(r)}>
                     <div className="mono">{String(r.run_id ?? "—").slice(0, 8)}</div>
-                    <div>{r.job?.name ?? r.job_name ?? "—"}</div>
+                    <div className="taskCell">{r.job?.name ?? r.job_name ?? "—"}</div>
                     <div>
                       <span className={cx("statusChip", r.status === "failed" ? "bad" : r.status === "success" ? "ok" : "")}>
                         {r.status}
@@ -1768,11 +1985,23 @@ function JobRunsPage() {
             )}
           </div>
         </div>
+        {rows.length > 0 ? (
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, alignItems: "center" }}>
+            <div className="muted">
+              Showing {Math.min(visibleRunCount, rows.length)} of {rows.length}
+            </div>
+            {showRunLoadMore ? (
+              <button className="ghostBtn" type="button" onClick={() => setVisibleRunCount((c) => c + PAGE_STEP)}>
+                Load more
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </Card>
 
       {selectedRun ? (
         <DetailModal
-          title="Run details"
+          title="Batch run details"
           subtitle={
             <span className="muted">
               {selectedRun.job?.name ?? selectedRun.job_name ?? "—"} |{" "}
@@ -1784,11 +2013,11 @@ function JobRunsPage() {
           {detailError ? <div className="errorLine">{detailError}</div> : null}
           <div className="detailGrid">
             <div>
-              <div className="muted">Run ID</div>
+              <div className="muted">Batch run ID</div>
               <div className="mono">{String(selectedRun.run_id ?? "—")}</div>
             </div>
             <div>
-              <div className="muted">File ID</div>
+              <div className="muted">Intake ID</div>
               <div className="mono">{selectedUploadId ? String(selectedUploadId) : "—"}</div>
             </div>
             <div>
@@ -1821,7 +2050,7 @@ function JobRunsPage() {
           </div>
 
           <div className="detailSection">
-            <div className="detailTitle">Processing steps</div>
+            <div className="detailTitle">Batch stages</div>
             {selectedSteps.length === 0 ? (
               <div className="muted">No step details recorded for this run.</div>
             ) : (
@@ -1940,6 +2169,12 @@ function IncidentsPage() {
   const [rows, setRows] = useState<any[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [refreshTick, setRefreshTick] = useState(0)
+  const [dateFilterMode, setDateFilterMode] = useState("all")
+  const [dateFilterDate, setDateFilterDate] = useState("")
+  const [dateFilterDay, setDateFilterDay] = useState("1")
+  const [dateFilterMonth, setDateFilterMonth] = useState("")
+  const [dateFilterYear, setDateFilterYear] = useState(() => String(new Date().getFullYear()))
+  const [visibleIncidentCount, setVisibleIncidentCount] = useState(PAGE_STEP)
 
   const [showCreate, setShowCreate] = useState(false)
   const [newUploadId, setNewUploadId] = useState("")
@@ -1954,21 +2189,57 @@ function IncidentsPage() {
   const [incidentDetailLoading, setIncidentDetailLoading] = useState(false)
 
   useEffect(() => {
+    setVisibleIncidentCount(PAGE_STEP)
+  }, [filter, dateFilterMode, dateFilterDate, dateFilterDay, dateFilterMonth, dateFilterYear])
+
+  const matchesIncidentDate = (value?: string) => {
+    if (dateFilterMode === "all") return true
+    const parts = getLocalDateParts(value)
+    if (!parts) return false
+    if (dateFilterMode === "date") {
+      const selected = parseDateOnly(dateFilterDate)
+      if (!selected) return true
+      return (
+        parts.year === selected.getFullYear() &&
+        parts.month === selected.getMonth() + 1 &&
+        parts.day === selected.getDate()
+      )
+    }
+    if (dateFilterMode === "day") {
+      const dayNumber = Number(dateFilterDay)
+      if (Number.isNaN(dayNumber)) return true
+      return parts.weekday === dayNumber
+    }
+    if (dateFilterMode === "month") {
+      const selected = parseMonthOnly(dateFilterMonth)
+      if (!selected) return true
+      return parts.year === selected.year && parts.month === selected.month
+    }
+    if (dateFilterMode === "year") {
+      const yearNumber = Number(dateFilterYear)
+      if (!yearNumber) return true
+      return parts.year === yearNumber
+    }
+    return true
+  }
+
+  useEffect(() => {
     let mounted = true
     async function load() {
       try {
         const res = await apiClient.incidents.list({ ordering: "-created_at" })
         const all = unwrapList<any>(res)
+        const dateFiltered = all.filter((r) => matchesIncidentDate(r.created_at || r.updated_at))
         const c = {
-          total: all.length,
-          open: all.filter((r) => r.state === "open").length,
-          in_progress: all.filter((r) => r.state === "in_progress").length,
-          resolved: all.filter((r) => r.state === "resolved").length,
+          total: dateFiltered.length,
+          open: dateFiltered.filter((r) => r.state === "open").length,
+          in_progress: dateFiltered.filter((r) => r.state === "in_progress").length,
+          resolved: dateFiltered.filter((r) => r.state === "resolved").length,
         }
-        const filtered = filter === "all" ? all : all.filter((r) => r.state === filter)
+        const filtered = filter === "all" ? dateFiltered : dateFiltered.filter((r) => r.state === filter)
         if (!mounted) return
         setCounts(c)
-        setRows(filtered.slice(0, 30))
+        setRows(filtered)
         setLoadError(null)
       } catch {
         if (!mounted) return
@@ -1983,11 +2254,19 @@ function IncidentsPage() {
       mounted = false
       clearInterval(t)
     }
-  }, [filter, refreshTick])
+  }, [
+    filter,
+    refreshTick,
+    dateFilterMode,
+    dateFilterDate,
+    dateFilterDay,
+    dateFilterMonth,
+    dateFilterYear,
+  ])
 
   async function createIncident() {
     if (!newUploadId.trim()) {
-      alert("File ID is required to create an issue.")
+      alert("Intake ID is required to create a batch issue.")
       return
     }
     const payload: any = {
@@ -2140,19 +2419,22 @@ function IncidentsPage() {
     setIncidentDetailLoading(false)
   }
 
+  const visibleIncidents = rows.slice(0, visibleIncidentCount)
+  const showIncidentLoadMore = rows.length > visibleIncidentCount
+
   return (
     <div className="page pageTall">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Issues</div>
-          <div className="pageSub">Problems found while processing files. Track and resolve them here.</div>
+          <div className="pageTitle">Batch issues</div>
+          <div className="pageSub">Problems found while processing batches. Track and resolve them here.</div>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="ghostBtn" type="button" onClick={() => setRefreshTick((x) => x + 1)}>
             Refresh
           </button>
           <button className="primaryBtnSmall" type="button" onClick={() => setShowCreate(true)}>
-            + Create issue
+            + Create batch issue
           </button>
         </div>
       </div>
@@ -2177,11 +2459,85 @@ function IncidentsPage() {
             { value: "resolved", label: "Resolved" },
           ]}
         />
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12, alignItems: "flex-end" }}>
+          <div>
+            <div className="muted" style={{ fontSize: 12 }}>Filter by</div>
+            <select className="input" value={dateFilterMode} onChange={(e) => setDateFilterMode(e.target.value)}>
+              <option value="all">All dates</option>
+              <option value="date">Exact date</option>
+              <option value="day">Day of week</option>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
+          {dateFilterMode === "date" ? (
+            <div>
+              <div className="muted" style={{ fontSize: 12 }}>Date</div>
+              <input
+                className="input"
+                type="date"
+                value={dateFilterDate}
+                onChange={(e) => setDateFilterDate(e.target.value)}
+              />
+            </div>
+          ) : null}
+          {dateFilterMode === "day" ? (
+            <div>
+              <div className="muted" style={{ fontSize: 12 }}>Day</div>
+              <select className="input" value={dateFilterDay} onChange={(e) => setDateFilterDay(e.target.value)}>
+                <option value="0">Sunday</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+              </select>
+            </div>
+          ) : null}
+          {dateFilterMode === "month" ? (
+            <div>
+              <div className="muted" style={{ fontSize: 12 }}>Month</div>
+              <input
+                className="input"
+                type="month"
+                value={dateFilterMonth}
+                onChange={(e) => setDateFilterMonth(e.target.value)}
+              />
+            </div>
+          ) : null}
+          {dateFilterMode === "year" ? (
+            <div>
+              <div className="muted" style={{ fontSize: 12 }}>Year</div>
+              <input
+                className="input"
+                type="number"
+                value={dateFilterYear}
+                onChange={(e) => setDateFilterYear(e.target.value)}
+                min="2000"
+                max="2100"
+              />
+            </div>
+          ) : null}
+          <button
+            className="ghostBtn"
+            type="button"
+            onClick={() => {
+              setDateFilterMode("all")
+              setDateFilterDate("")
+              setDateFilterDay("1")
+              setDateFilterMonth("")
+              setDateFilterYear(String(new Date().getFullYear()))
+            }}
+          >
+            Clear date filters
+          </button>
+        </div>
       </Card>
 
       <Card>
         <div className="tableHeader">
-          <div className="muted">Latest issues</div>
+          <div className="muted">Latest batch issues</div>
           <div className="muted">Auto-updating</div>
         </div>
         {loadError ? <div className="errorLine">{loadError}</div> : null}
@@ -2193,7 +2549,7 @@ function IncidentsPage() {
               <div>Status</div>
               <div>Severity</div>
               <div>Created</div>
-              <div>File</div>
+              <div>Intake</div>
               <div>Error</div>
               <div>Assignee</div>
               <div>Known issue?</div>
@@ -2205,7 +2561,7 @@ function IncidentsPage() {
                 No issues yet.
               </div>
             ) : (
-              rows.map((r) => {
+              visibleIncidents.map((r) => {
                 const incidentKey = r.incident_id ?? r.id ?? Math.random()
                 const incidentId = r.incident_id ?? r.id
                 return (
@@ -2254,6 +2610,18 @@ function IncidentsPage() {
             )}
           </div>
         </div>
+        {rows.length > 0 ? (
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, alignItems: "center" }}>
+            <div className="muted">
+              Showing {Math.min(visibleIncidentCount, rows.length)} of {rows.length}
+            </div>
+            {showIncidentLoadMore ? (
+              <button className="ghostBtn" type="button" onClick={() => setVisibleIncidentCount((c) => c + PAGE_STEP)}>
+                Load more
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </Card>
 
       {inspectingIncident ? (
@@ -2262,7 +2630,7 @@ function IncidentsPage() {
           subtitle={
             inspectingIncident.upload?.upload_id ? (
               <span className="muted">
-                File {String(inspectingIncident.upload.upload_id).slice(0, 8)}
+                Intake {String(inspectingIncident.upload.upload_id).slice(0, 8)}
               </span>
             ) : (
               <span className="muted">{fmtDate(inspectingIncident.created_at)}</span>
@@ -2324,7 +2692,7 @@ function IncidentsPage() {
               <div>{inspectingIncident.assignee ?? "Unassigned"}</div>
             </div>
             <div>
-              <div className="muted">File</div>
+              <div className="muted">Intake</div>
               <div className="mono">
                 {inspectingIncident.upload?.upload_id
                   ? String(inspectingIncident.upload.upload_id).slice(0, 8)
@@ -2443,15 +2811,15 @@ function IncidentsPage() {
       {showCreate ? (
         <div className="modalBackdrop" onClick={() => setShowCreate(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modalTitle">Create issue</div>
+            <div className="modalTitle">Create batch issue</div>
 
             <div className="field">
-              <label className="label">File ID</label>
+              <label className="label">Intake ID</label>
               <input
                 className="input"
                 value={newUploadId}
                 onChange={(e) => setNewUploadId(e.target.value)}
-                placeholder="Paste the File ID from the Files page"
+                placeholder="Paste the Intake ID from the Batch Intake page"
               />
             </div>
 
@@ -2669,8 +3037,8 @@ function TicketsPage() {
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Tasks</div>
-          <div className="pageSub">Track follow-up tasks tied to issues and mark them complete.</div>
+          <div className="pageTitle">Batch tasks</div>
+          <div className="pageSub">Track follow-up tasks tied to batch issues and mark them complete.</div>
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
@@ -2678,7 +3046,7 @@ function TicketsPage() {
             Refresh
           </button>
           <button className="primaryBtnSmall" type="button" onClick={() => setShowCreate(true)}>
-            + Create task
+            + Create batch task
           </button>
         </div>
       </div>
@@ -2710,7 +3078,7 @@ function TicketsPage() {
 
       <Card>
         <div className="tableHeader">
-          <div className="muted">Latest tasks</div>
+          <div className="muted">Latest batch tasks</div>
           <div className="muted">Auto-updating</div>
         </div>
 
@@ -2805,7 +3173,7 @@ function TicketsPage() {
       {showCreate ? (
         <div className="modalBackdrop" onClick={() => setShowCreate(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modalTitle">Create task</div>
+            <div className="modalTitle">Create batch task</div>
 
             <div className="field">
               <label className="label">Issue ID (optional)</label>
@@ -2860,11 +3228,11 @@ function ReportsPage() {
       }
       if (run.status !== "success") {
         if (run.status === "failed") {
-          setHint("This run failed. Check Issues for details before downloading.")
-          return
-        }
-        setHint("This run is still processing. Please wait for it to finish.")
+        setHint("This run failed. Check Batch Issues for details before downloading.")
         return
+      }
+      setHint("This run is still processing. Please wait for it to finish.")
+      return
       }
       await ensureReportDownloaded(uploadId, { format: reportFormat })
       setHint(null)
@@ -2872,7 +3240,7 @@ function ReportsPage() {
       if (typeof e?.message === "string") {
         setHint(e.message)
       } else if (e?.response?.status === 404) {
-        setHint("Run ID not found. Use one from the Processing tab.")
+        setHint("Run ID not found. Use one from the Batch Runs tab.")
       } else {
         setHint("Failed to download report. Ensure the run is complete and try again.")
       }
@@ -2885,15 +3253,15 @@ function ReportsPage() {
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Reports</div>
-          <div className="pageSub">Download the report for a file in CSV or PDF.</div>
+          <div className="pageTitle">Batch reports</div>
+          <div className="pageSub">Download the batch report for an intake file in CSV or PDF.</div>
         </div>
       </div>
 
       <Card>
         <div className="sectionTitle">Download a report</div>
         <div className="muted" style={{ marginTop: 8 }}>
-          Paste the Run ID from Processing and BatchOps will fetch the related report.
+          Paste the Run ID from Batch Runs and BatchOps will fetch the related report.
         </div>
 
         <div className="field" style={{ marginTop: 12 }}>
@@ -2928,7 +3296,7 @@ function ReportsPage() {
       <Card>
         <div className="sectionTitle">Quick steps</div>
         <ol className="steps">
-          <li>Go to Files.</li>
+          <li>Go to Batch Intake.</li>
           <li>Upload a CSV, Excel, or PDF.</li>
           <li>Wait until the status shows "published".</li>
           <li>Select "Download report".</li>
@@ -2948,6 +3316,8 @@ function JobsPage() {
   const [newJobArgs, setNewJobArgs] = useState("")
   const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, string>>({})
   const [savingJobId, setSavingJobId] = useState<string | null>(null)
+  const [jobQuery, setJobQuery] = useState("")
+  const [showAllJobs, setShowAllJobs] = useState(false)
 
   const syncDrafts = (list: any[]) => {
     const next: Record<string, string> = {}
@@ -2975,6 +3345,15 @@ function JobsPage() {
   useEffect(() => {
     loadJobs()
   }, [])
+
+  const filteredJobs = jobs.filter((job) => {
+    if (!jobQuery.trim()) return true
+    const q = jobQuery.trim().toLowerCase()
+    const name = String(job.name ?? "").toLowerCase()
+    const callable = String(job.config?.callable ?? "").toLowerCase()
+    return name.includes(q) || callable.includes(q)
+  })
+  const visibleJobs = showAllJobs ? filteredJobs : filteredJobs.slice(0, 6)
 
   async function createJob() {
     if (!newJobName.trim() || !newJobCallable.trim()) {
@@ -3048,22 +3427,22 @@ function JobsPage() {
     <div className="page">
       <div className="pageHeader">
         <div>
-          <div className="pageTitle">Schedules</div>
-          <div className="pageSub">Set tasks to run automatically and start them anytime.</div>
+          <div className="pageTitle">Batch schedules</div>
+          <div className="pageSub">Set batch jobs to run automatically and start them anytime.</div>
         </div>
       </div>
 
       <div className="grid2">
         <Card>
           <div className="formHeader">
-            <div className="formTitle">New scheduled task</div>
+            <div className="formTitle">New batch schedule</div>
           </div>
           <div className="field">
-            <label className="label">Task name</label>
+            <label className="label">Batch job name</label>
             <input className="input" value={newJobName} onChange={(e) => setNewJobName(e.target.value)} placeholder="e.g. nightly_reports" />
           </div>
           <div className="field">
-            <label className="label">Action to run (advanced)</label>
+            <label className="label">Batch action to run (advanced)</label>
             <input
               className="input"
               value={newJobCallable}
@@ -3081,34 +3460,48 @@ function JobsPage() {
             />
           </div>
           <div className="field">
-            <label className="label">Schedule (optional)</label>
+            <label className="label">Batch schedule (optional)</label>
             <input className="input" value={newJobCron} onChange={(e) => setNewJobCron(e.target.value)} placeholder="*/5 * * * *" />
           </div>
           <button className="primaryBtn" type="button" disabled={savingJobId === "create"} onClick={createJob}>
-            {savingJobId === "create" ? "Creating..." : "Create schedule"}
+            {savingJobId === "create" ? "Creating..." : "Create batch schedule"}
           </button>
         </Card>
 
         <Card>
           <div className="formHeader">
-            <div className="formTitle">Configured schedules</div>
-            <button className="ghostBtn" type="button" onClick={loadJobs} disabled={loading}>
-              {loading ? "Loading..." : "Refresh"}
-            </button>
+            <div>
+              <div className="formTitle">Batch schedules</div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                {filteredJobs.length} total
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input
+                className="input"
+                style={{ minWidth: 180 }}
+                value={jobQuery}
+                onChange={(e) => setJobQuery(e.target.value)}
+                placeholder="Search batch schedules"
+              />
+              <button className="ghostBtn" type="button" onClick={loadJobs} disabled={loading}>
+                {loading ? "Loading..." : "Refresh"}
+              </button>
+            </div>
           </div>
           {jobError ? <div className="errorLine">{jobError}</div> : null}
-          {jobs.length === 0 ? (
-            <div className="muted">No schedules configured yet.</div>
+          {filteredJobs.length === 0 ? (
+            <div className="muted">No batch schedules configured yet.</div>
           ) : (
             <div className="jobList">
-              {jobs.map((job: any) => {
+              {visibleJobs.map((job: any) => {
                 const jobId = String(job.id)
                 return (
                   <div className="jobRow" key={jobId}>
                     <div>
                       <div className="muted">Name</div>
                       <div className="mono">{job.name}</div>
-                      <div className="muted" style={{ fontSize: 12 }}>Automated task</div>
+                      <div className="muted" style={{ fontSize: 12 }}>Batch job</div>
                     </div>
                     <div>
                       <div className="muted">Action</div>
@@ -3138,12 +3531,22 @@ function JobsPage() {
                         disabled={savingJobId === jobId}
                         onClick={() => triggerJob(jobId)}
                       >
-                        Run now
+                        Run batch now
                       </button>
                     </div>
                   </div>
                 )
               })}
+              {filteredJobs.length > 6 ? (
+                <button
+                  className="ghostBtn"
+                  type="button"
+                  onClick={() => setShowAllJobs((prev) => !prev)}
+                  style={{ marginTop: 6, alignSelf: "flex-start" }}
+                >
+                  {showAllJobs ? "Show fewer schedules" : `Show all (${filteredJobs.length})`}
+                </button>
+              ) : null}
             </div>
           )}
         </Card>
