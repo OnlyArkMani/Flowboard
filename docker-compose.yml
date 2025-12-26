@@ -17,6 +17,12 @@ services:
     volumes:
       - redis_data:/data
 
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   backend:
     build:
       context: ./backend
@@ -26,7 +32,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DEBUG: "True"
+      DEBUG: "1"
       DJANGO_SETTINGS_MODULE: config.settings
       REDIS_URL: redis://redis:6379/0
       DB_NAME: batch_platform
@@ -34,6 +40,12 @@ services:
       DB_PASSWORD: postgres
       DB_HOST: db
       DB_PORT: "5432"
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@batchops.local}
     depends_on:
       - db
       - redis
@@ -54,6 +66,12 @@ services:
       DB_PASSWORD: postgres
       DB_HOST: db
       DB_PORT: "5432"
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@batchops.local}
     depends_on:
       - db
       - redis
@@ -75,6 +93,12 @@ services:
       DB_PASSWORD: postgres
       DB_HOST: db
       DB_PORT: "5432"
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@batchops.local}
     depends_on:
       - db
       - redis
