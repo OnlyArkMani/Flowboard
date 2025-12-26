@@ -4,10 +4,13 @@ import os
 import json
 import logging
 import base64
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 
 import pandas as pd
 from django.conf import settings
+from django.contrib.auth import authenticate
+from django.core.mail import send_mail
 from django.db import connection
 from django.http import HttpResponse
 from django.utils import timezone
@@ -16,12 +19,14 @@ from rq import Worker
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.authtoken.models import Token
 
-from .models import Upload, JobRun, Incident, Ticket, Job
+from .models import Upload, JobRun, Incident, Ticket, Job, User, PasswordResetRequest, EmailVerificationRequest
 from .serializers import UploadSerializer, JobRunSerializer, IncidentSerializer, TicketSerializer, JobSerializer
+from .permissions import UploadPermissions, JobRunPermissions, JobPermissions, IncidentPermissions, TicketPermissions
 from .workers import (
     job_chain_standardize,
     _load_df,
@@ -123,7 +128,7 @@ class UploadViewSet(viewsets.ModelViewSet):
     queryset = Upload.objects.all()
     serializer_class = UploadSerializer
     parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [AllowAny]
+    permission_classes = [UploadPermissions]
     lookup_field = "upload_id"
 
     def get_queryset(self):
@@ -194,7 +199,7 @@ class UploadViewSet(viewsets.ModelViewSet):
 class JobRunViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = JobRun.objects.all()
     serializer_class = JobRunSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [JobRunPermissions]
     lookup_field = "run_id"
 
     def get_queryset(self):
@@ -211,7 +216,7 @@ class JobRunViewSet(viewsets.ReadOnlyModelViewSet):
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [JobPermissions]
 
     @action(detail=True, methods=["post"])
     def trigger(self, request, pk=None):
@@ -224,7 +229,7 @@ class JobViewSet(viewsets.ModelViewSet):
 class IncidentViewSet(viewsets.ModelViewSet):
     queryset = Incident.objects.all()
     serializer_class = IncidentSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IncidentPermissions]
     lookup_field = "incident_id"
 
     def get_queryset(self):
@@ -352,7 +357,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [TicketPermissions]
     lookup_field = "ticket_id"
 
     def get_queryset(self):
@@ -405,8 +410,191 @@ class TicketViewSet(viewsets.ModelViewSet):
         return Response(TicketSerializer(ticket).data)
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @permission_classes([AllowAny])
+def auth_login(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+    if not username or not password:
+        return Response({"error": "username and password required"}, status=status.HTTP_400_BAD_REQUEST)
+    user = authenticate(request, username=username, password=password)
+    if not user:
+        return Response({"error": "invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+    if user.role in ["user", "moderator"] and not getattr(user, "email_verified", False):
+        return Response(
+            {"error": "email not verified", "verification_required": True},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    token, _ = Token.objects.get_or_create(user=user)
+    return Response(
+        {
+            "token": token.key,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "role": getattr(user, "role", "user"),
+                "is_superuser": user.is_superuser,
+            },
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_forgot(request):
+    username = request.data.get("username")
+    if not username:
+        return Response({"error": "username required"}, status=status.HTTP_400_BAD_REQUEST)
+    user = User.objects.filter(username=username).first()
+    if not user:
+        return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+    if not user.email:
+        return Response({"error": "email is missing for this user"}, status=status.HTTP_400_BAD_REQUEST)
+    if not getattr(user, "email_verified", False):
+        return Response({"error": "email not verified"}, status=status.HTTP_403_FORBIDDEN)
+    code = f"{random.randint(0, 999999):06d}"
+    expires = timezone.now() + timedelta(minutes=30)
+    reset_request = PasswordResetRequest.objects.create(user=user, code=code, expires_at=expires)
+    send_mail(
+        subject="BatchOps password reset code",
+        message=(
+            f"Your password reset code is {code}.\n"
+            f"It expires at {expires.isoformat()}.\n\n"
+            "If you did not request this, you can ignore this email."
+        ),
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        recipient_list=[user.email],
+        fail_silently=True,
+    )
+    return Response(
+        {
+            "reset_id": str(reset_request.request_id),
+            "expires_at": expires.isoformat(),
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_reset(request):
+    reset_id = request.data.get("reset_id")
+    code = request.data.get("code")
+    new_password = request.data.get("new_password")
+    if not reset_id or not code or not new_password:
+        return Response(
+            {"error": "reset_id, code, and new_password are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    reset_request = PasswordResetRequest.objects.filter(request_id=reset_id).first()
+    if not reset_request:
+        return Response({"error": "reset request not found"}, status=status.HTTP_404_NOT_FOUND)
+    if reset_request.used_at:
+        return Response({"error": "reset code already used"}, status=status.HTTP_400_BAD_REQUEST)
+    if reset_request.expires_at < timezone.now():
+        return Response({"error": "reset code expired"}, status=status.HTTP_400_BAD_REQUEST)
+    if str(reset_request.code) != str(code).strip():
+        return Response({"error": "invalid reset code"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = reset_request.user
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+    reset_request.used_at = timezone.now()
+    reset_request.save(update_fields=["used_at"])
+    Token.objects.filter(user=user).delete()
+    return Response({"status": "password_reset"})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_send_verification(request):
+    username = request.data.get("username")
+    if not username:
+        return Response({"error": "username required"}, status=status.HTTP_400_BAD_REQUEST)
+    user = User.objects.filter(username=username).first()
+    if not user:
+        return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+    if not user.email:
+        return Response({"error": "email is missing for this user"}, status=status.HTTP_400_BAD_REQUEST)
+    if getattr(user, "email_verified", False):
+        return Response({"status": "already_verified"})
+    code = f"{random.randint(0, 999999):06d}"
+    expires = timezone.now() + timedelta(minutes=30)
+    verification = EmailVerificationRequest.objects.create(user=user, code=code, expires_at=expires)
+    send_mail(
+        subject="Verify your BatchOps email",
+        message=(
+            f"Your verification code is {code}.\n"
+            f"It expires at {expires.isoformat()}.\n\n"
+            "If you did not request this, you can ignore this email."
+        ),
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        recipient_list=[user.email],
+        fail_silently=True,
+    )
+    return Response(
+        {
+            "verification_id": str(verification.request_id),
+            "expires_at": expires.isoformat(),
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_verify_email(request):
+    verification_id = request.data.get("verification_id")
+    code = request.data.get("code")
+    username = request.data.get("username")
+    if not verification_id or not code or not username:
+        return Response(
+            {"error": "verification_id, username, and code are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    verification = EmailVerificationRequest.objects.filter(request_id=verification_id).first()
+    if not verification:
+        return Response({"error": "verification not found"}, status=status.HTTP_404_NOT_FOUND)
+    if verification.used_at:
+        return Response({"error": "verification code already used"}, status=status.HTTP_400_BAD_REQUEST)
+    if verification.expires_at < timezone.now():
+        return Response({"error": "verification code expired"}, status=status.HTTP_400_BAD_REQUEST)
+    if verification.user.username != username:
+        return Response({"error": "username does not match"}, status=status.HTTP_400_BAD_REQUEST)
+    if str(verification.code) != str(code).strip():
+        return Response({"error": "invalid verification code"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = verification.user
+    user.email_verified = True
+    user.save(update_fields=["email_verified"])
+    verification.used_at = timezone.now()
+    verification.save(update_fields=["used_at"])
+    return Response({"status": "email_verified"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def auth_me(request):
+    user = request.user
+    return Response(
+        {
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "role": getattr(user, "role", "user"),
+                "is_superuser": user.is_superuser,
+            }
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def auth_logout(request):
+    Token.objects.filter(user=request.user).delete()
+    return Response({"status": "logged_out"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def reports_summary(request):
     upload_id = request.query_params.get("upload_id")
     job_run_id = request.query_params.get("job_run_id")

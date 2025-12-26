@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     "rest_framework",
+    "rest_framework.authtoken",
     "corsheaders",
 
     "core.apps.CoreConfig",
@@ -79,6 +80,11 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 5000,
     "PAGE_SIZE_QUERY_PARAM": "page_size",
     "MAX_PAGE_SIZE": 5000,
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
 }
 
 # Default primary key field type for new models
@@ -94,3 +100,11 @@ EXPORT_DIR = os.path.join(STORAGE_ROOT, "exports")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(REPORT_DIR, exist_ok=True)
 os.makedirs(EXPORT_DIR, exist_ok=True)
+
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "mailhog")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "1025"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "0") == "1"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@batchops.local")
