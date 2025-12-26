@@ -7,6 +7,8 @@ type PillTone = "live" | "pipeline" | "execution" | "rca" | "workflow" | "export
 type QueuedUploadFile = { id: string; file: File }
 type DownloadFormat = "csv" | "pdf"
 type ProcessMode = "transform_gradebook" | "append_record" | "delete_record" | "custom_rules"
+type UserRole = "admin" | "moderator" | "user"
+type AuthUser = { id?: number; username: string; role: UserRole; is_superuser?: boolean }
 type StageDetailPayload = {
   step: any
   run?: any
@@ -34,6 +36,38 @@ const LAST_NAV_KEY = "batchops:lastNav"
 const LAST_UPLOAD_KEY = "batchops:lastUpload"
 const UPLOAD_QUEUE_DB = "batchopsUploadQueue"
 const UPLOAD_QUEUE_STORE = "files"
+
+type AuthContextValue = {
+  user: AuthUser | null
+  role: UserRole
+  canEditSchedules: boolean
+  canRunSchedules: boolean
+  canManageIncidents: boolean
+  canCreateIncidents: boolean
+}
+
+const AuthContext = React.createContext<AuthContextValue | null>(null)
+
+function resolveRole(user: AuthUser | null): UserRole {
+  if (!user) return "user"
+  if (user.is_superuser) return "admin"
+  return user.role || "user"
+}
+
+function useAuth() {
+  const ctx = React.useContext(AuthContext)
+  if (!ctx) {
+    return {
+      user: null,
+      role: "user" as UserRole,
+      canEditSchedules: false,
+      canRunSchedules: false,
+      canManageIncidents: false,
+      canCreateIncidents: false,
+    }
+  }
+  return ctx
+}
 
 function cx(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ")
@@ -63,7 +97,7 @@ async function postJSON(path: string, body: any) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { Authorization: `Token ${token}` } : {}),
     },
     body: JSON.stringify(body ?? {}),
   })
@@ -76,7 +110,7 @@ async function getJSON(path: string) {
   const res = await fetch(`${baseURL()}${path}`, {
     method: "GET",
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { Authorization: `Token ${token}` } : {}),
     },
   })
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
@@ -596,7 +630,7 @@ async function ensureReportDownloaded(
     url.searchParams.set("upload_id", uploadId)
     url.searchParams.set("format", format)
     const res = await fetch(url.toString(), {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      headers: token ? { Authorization: `Token ${token}` } : undefined,
     })
     if (res.ok) {
       const blob = await res.blob()
@@ -2164,6 +2198,7 @@ function JobRunsPage() {
 }
 
 function IncidentsPage() {
+  const auth = useAuth()
   const [filter, setFilter] = useState("all")
   const [counts, setCounts] = useState({ total: 0, open: 0, in_progress: 0, resolved: 0 })
   const [rows, setRows] = useState<any[]>([])
@@ -2265,6 +2300,10 @@ function IncidentsPage() {
   ])
 
   async function createIncident() {
+    if (!auth.canCreateIncidents) {
+      alert("Only moderators and admins can create batch issues.")
+      return
+    }
     if (!newUploadId.trim()) {
       alert("Intake ID is required to create a batch issue.")
       return
@@ -2296,6 +2335,10 @@ function IncidentsPage() {
   }
 
   async function assignIncident(incidentId?: string) {
+    if (!auth.canManageIncidents) {
+      alert("Only moderators and admins can assign batch issues.")
+      return
+    }
     if (!incidentId) {
       alert("Missing issue ID.")
       return
@@ -2314,6 +2357,10 @@ function IncidentsPage() {
   }
 
   async function resolveIncident(incidentId?: string) {
+    if (!auth.canManageIncidents) {
+      alert("Only moderators and admins can resolve batch issues.")
+      return
+    }
     if (!incidentId) {
       alert("Missing issue ID.")
       return
@@ -2337,6 +2384,10 @@ function IncidentsPage() {
   }
 
   async function analyzeIncident(incidentId?: string) {
+    if (!auth.canManageIncidents) {
+      alert("Only moderators and admins can update analysis.")
+      return
+    }
     if (!incidentId) {
       alert("Missing issue ID.")
       return
@@ -2360,6 +2411,10 @@ function IncidentsPage() {
   }
 
   async function retryIncident(incidentId?: string) {
+    if (!auth.canManageIncidents) {
+      alert("Only moderators and admins can retry batch issues.")
+      return
+    }
     if (!incidentId) {
       alert("Missing issue ID.")
       return
@@ -2377,6 +2432,10 @@ function IncidentsPage() {
   }
 
   async function archiveIncident(incidentId?: string) {
+    if (!auth.canManageIncidents) {
+      alert("Only moderators and admins can archive batch issues.")
+      return
+    }
     if (!incidentId) {
       alert("Missing issue ID.")
       return
@@ -2428,12 +2487,23 @@ function IncidentsPage() {
         <div>
           <div className="pageTitle">Batch issues</div>
           <div className="pageSub">Problems found while processing batches. Track and resolve them here.</div>
+          {auth.role === "user" ? (
+            <div className="muted" style={{ fontSize: 12 }}>
+              View-only access. Ask a moderator to assign, resolve, or retry issues.
+            </div>
+          ) : null}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="ghostBtn" type="button" onClick={() => setRefreshTick((x) => x + 1)}>
             Refresh
           </button>
-          <button className="primaryBtnSmall" type="button" onClick={() => setShowCreate(true)}>
+          <button
+            className="primaryBtnSmall"
+            type="button"
+            onClick={() => setShowCreate(true)}
+            disabled={!auth.canCreateIncidents}
+            title={auth.canCreateIncidents ? "" : "Moderators and admins can create issues."}
+          >
             + Create batch issue
           </button>
         </div>
@@ -2583,26 +2653,28 @@ function IncidentsPage() {
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
                     className="ghostBtn"
-                        type="button"
-                        disabled={actionBusy === incidentId}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          assignIncident(incidentId ? String(incidentId) : undefined)
-                        }}
-                      >
-                        Assign
-                      </button>
-                      <button
-                        className="ghostBtn"
-                        type="button"
-                        disabled={actionBusy === incidentId || r.state === "resolved"}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          resolveIncident(incidentId ? String(incidentId) : undefined)
-                        }}
-                      >
-                        Resolve
-                      </button>
+                    type="button"
+                    disabled={actionBusy === incidentId || !auth.canManageIncidents}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      assignIncident(incidentId ? String(incidentId) : undefined)
+                    }}
+                    title={auth.canManageIncidents ? "" : "Moderators and admins can assign issues."}
+                  >
+                    Assign
+                  </button>
+                  <button
+                    className="ghostBtn"
+                    type="button"
+                    disabled={actionBusy === incidentId || r.state === "resolved" || !auth.canManageIncidents}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      resolveIncident(incidentId ? String(incidentId) : undefined)
+                    }}
+                    title={auth.canManageIncidents ? "" : "Moderators and admins can resolve issues."}
+                  >
+                    Resolve
+                  </button>
                     </div>
                   </div>
                 )
@@ -2642,21 +2714,27 @@ function IncidentsPage() {
             <button
               className="ghostBtn"
               type="button"
+              disabled={!auth.canManageIncidents}
               onClick={() => analyzeIncident(String(inspectingIncident.incident_id))}
+              title={auth.canManageIncidents ? "" : "Moderators and admins can add notes."}
             >
               Add notes
             </button>
             <button
               className="ghostBtn"
               type="button"
+              disabled={!auth.canManageIncidents}
               onClick={() => retryIncident(String(inspectingIncident.incident_id))}
+              title={auth.canManageIncidents ? "" : "Moderators and admins can retry issues."}
             >
               Try again
             </button>
             <button
               className="ghostBtn"
               type="button"
+              disabled={!auth.canManageIncidents}
               onClick={() => archiveIncident(String(inspectingIncident.incident_id))}
+              title={auth.canManageIncidents ? "" : "Moderators and admins can archive issues."}
             >
               Archive
             </button>
@@ -3307,6 +3385,7 @@ function ReportsPage() {
 }
 
 function JobsPage() {
+  const auth = useAuth()
   const [jobs, setJobs] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [jobError, setJobError] = useState<string | null>(null)
@@ -3356,6 +3435,10 @@ function JobsPage() {
   const visibleJobs = showAllJobs ? filteredJobs : filteredJobs.slice(0, 6)
 
   async function createJob() {
+    if (!auth.canEditSchedules) {
+      setJobError("Only admins can create batch schedules.")
+      return
+    }
     if (!newJobName.trim() || !newJobCallable.trim()) {
       setJobError("Task name and action are required.")
       return
@@ -3397,6 +3480,10 @@ function JobsPage() {
   }
 
   async function saveSchedule(jobId: string) {
+    if (!auth.canEditSchedules) {
+      setJobError("Only admins can update schedules.")
+      return
+    }
     const cron = scheduleDrafts[jobId] ?? ""
     try {
       setSavingJobId(jobId)
@@ -3429,44 +3516,61 @@ function JobsPage() {
         <div>
           <div className="pageTitle">Batch schedules</div>
           <div className="pageSub">Set batch jobs to run automatically and start them anytime.</div>
+          {!auth.canEditSchedules ? (
+            <div className="muted" style={{ fontSize: 12 }}>
+              You can run schedules, but only admins can create or edit them.
+            </div>
+          ) : null}
         </div>
       </div>
 
       <div className="grid2">
-        <Card>
-          <div className="formHeader">
-            <div className="formTitle">New batch schedule</div>
-          </div>
-          <div className="field">
-            <label className="label">Batch job name</label>
-            <input className="input" value={newJobName} onChange={(e) => setNewJobName(e.target.value)} placeholder="e.g. nightly_reports" />
-          </div>
-          <div className="field">
-            <label className="label">Batch action to run (advanced)</label>
-            <input
-              className="input"
-              value={newJobCallable}
-              onChange={(e) => setNewJobCallable(e.target.value)}
-              placeholder="module.path:function_name"
-            />
-          </div>
-          <div className="field">
-            <label className="label">Optional details (JSON)</label>
-            <textarea
-              className="textarea"
-              value={newJobArgs}
-              onChange={(e) => setNewJobArgs(e.target.value)}
-              placeholder='e.g. ["arg1", 42]'
-            />
-          </div>
-          <div className="field">
-            <label className="label">Batch schedule (optional)</label>
-            <input className="input" value={newJobCron} onChange={(e) => setNewJobCron(e.target.value)} placeholder="*/5 * * * *" />
-          </div>
-          <button className="primaryBtn" type="button" disabled={savingJobId === "create"} onClick={createJob}>
-            {savingJobId === "create" ? "Creating..." : "Create batch schedule"}
-          </button>
-        </Card>
+        {auth.canEditSchedules ? (
+          <Card>
+            <div className="formHeader">
+              <div className="formTitle">New batch schedule</div>
+            </div>
+            <div className="field">
+              <label className="label">Batch job name</label>
+              <input className="input" value={newJobName} onChange={(e) => setNewJobName(e.target.value)} placeholder="e.g. nightly_reports" />
+            </div>
+            <div className="field">
+              <label className="label">Batch action to run (advanced)</label>
+              <input
+                className="input"
+                value={newJobCallable}
+                onChange={(e) => setNewJobCallable(e.target.value)}
+                placeholder="module.path:function_name"
+              />
+            </div>
+            <div className="field">
+              <label className="label">Optional details (JSON)</label>
+              <textarea
+                className="textarea"
+                value={newJobArgs}
+                onChange={(e) => setNewJobArgs(e.target.value)}
+                placeholder='e.g. ["arg1", 42]'
+              />
+            </div>
+            <div className="field">
+              <label className="label">Batch schedule (optional)</label>
+              <input className="input" value={newJobCron} onChange={(e) => setNewJobCron(e.target.value)} placeholder="*/5 * * * *" />
+            </div>
+            <button className="primaryBtn" type="button" disabled={savingJobId === "create"} onClick={createJob}>
+              {savingJobId === "create" ? "Creating..." : "Create batch schedule"}
+            </button>
+          </Card>
+        ) : (
+          <Card>
+            <div className="formHeader">
+              <div className="formTitle">New batch schedule</div>
+              <div className="muted" style={{ fontSize: 12 }}>Admin only</div>
+            </div>
+            <div className="muted">
+              Ask an admin to add new schedules. You can still run any existing schedule from the list.
+            </div>
+          </Card>
+        )}
 
         <Card>
           <div className="formHeader">
@@ -3514,14 +3618,17 @@ function JobsPage() {
                         value={scheduleDrafts[jobId] ?? ""}
                         onChange={(e) => setScheduleDrafts((draft) => ({ ...draft, [jobId]: e.target.value }))}
                         placeholder="Schedule format (cron)"
+                        disabled={!auth.canEditSchedules}
+                        title={auth.canEditSchedules ? "" : "Admins can edit schedules."}
                       />
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button
                         className="ghostBtn"
                         type="button"
-                        disabled={savingJobId === jobId}
+                        disabled={savingJobId === jobId || !auth.canEditSchedules}
                         onClick={() => saveSchedule(jobId)}
+                        title={auth.canEditSchedules ? "" : "Admins can edit schedules."}
                       >
                         Save
                       </button>
@@ -3558,12 +3665,75 @@ function JobsPage() {
 /** ---------------- APP SHELL ---------------- */
 
 export default function App() {
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authBusy, setAuthBusy] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [authUsername, setAuthUsername] = useState("")
+  const [authPassword, setAuthPassword] = useState("")
+  const [showReset, setShowReset] = useState(false)
+  const [resetStep, setResetStep] = useState<"request" | "verify" | "done">("request")
+  const [resetUsername, setResetUsername] = useState("")
+  const [resetId, setResetId] = useState("")
+  const [resetCode, setResetCode] = useState("")
+  const [resetPassword, setResetPassword] = useState("")
+  const [resetConfirm, setResetConfirm] = useState("")
+  const [resetError, setResetError] = useState<string | null>(null)
+  const [resetBusy, setResetBusy] = useState(false)
+  const [resetExpires, setResetExpires] = useState("")
+  const [showVerify, setShowVerify] = useState(false)
+  const [verifyStep, setVerifyStep] = useState<"request" | "confirm" | "done">("request")
+  const [verifyUsername, setVerifyUsername] = useState("")
+  const [verifyId, setVerifyId] = useState("")
+  const [verifyCode, setVerifyCode] = useState("")
+  const [verifyError, setVerifyError] = useState<string | null>(null)
+  const [verifyBusy, setVerifyBusy] = useState(false)
+  const [verifyExpires, setVerifyExpires] = useState("")
   const [active, setActive] = useState<NavKey>(() => {
     if (typeof window === "undefined") return "dashboard"
     const saved = localStorage.getItem(LAST_NAV_KEY)
     return NAV.some((item) => item.key === saved) ? (saved as NavKey) : "dashboard"
   })
   const [systemOnline, setSystemOnline] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    async function loadMe() {
+      if (typeof window === "undefined") {
+        setAuthLoading(false)
+        return
+      }
+      const token = localStorage.getItem("jwt_token")
+      if (!token) {
+        setAuthLoading(false)
+        return
+      }
+      try {
+        const res = await fetch(`${baseURL()}/api/auth/me`, {
+          headers: { Authorization: `Token ${token}` },
+        })
+        if (!res.ok) throw new Error("Auth failed")
+        const data = await res.json()
+        if (!mounted) return
+        setAuthUser(data.user ?? null)
+      } catch {
+        if (!mounted) return
+        try {
+          localStorage.removeItem("jwt_token")
+        } catch {
+          // ignore
+        }
+        setAuthUser(null)
+      } finally {
+        if (!mounted) return
+        setAuthLoading(false)
+      }
+    }
+    loadMe()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -3593,56 +3763,557 @@ export default function App() {
     }
   }, [active])
 
-  return (
-    <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brandMark">BO</div>
-          <div>
-            <div className="brandName">BatchOps</div>
-            <div className="brandSub">School workflows</div>
-          </div>
+  const role = resolveRole(authUser)
+  const authValue = useMemo<AuthContextValue>(
+    () => ({
+      user: authUser,
+      role,
+      canEditSchedules: role === "admin",
+      canRunSchedules: true,
+      canManageIncidents: role !== "user",
+      canCreateIncidents: role !== "user",
+    }),
+    [authUser, role],
+  )
+
+  async function handleLogin() {
+    if (!authUsername.trim() || !authPassword.trim()) {
+      setAuthError("Enter both username and password.")
+      return
+    }
+    setAuthBusy(true)
+    setAuthError(null)
+    try {
+      const res = await fetch(`${baseURL()}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: authUsername.trim(), password: authPassword }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        if (data?.verification_required) {
+          setAuthError("Email not verified. Please verify to continue.")
+          setShowVerify(true)
+          setShowReset(false)
+          setVerifyStep("request")
+          setVerifyUsername(authUsername.trim())
+          setVerifyId("")
+          setVerifyCode("")
+          setVerifyError(null)
+          setVerifyExpires("")
+          return
+        }
+        throw new Error(data?.error || "Login failed.")
+      }
+      if (data?.token) {
+        localStorage.setItem("jwt_token", data.token)
+      }
+      setAuthUser(data.user ?? null)
+      setAuthPassword("")
+    } catch (err: any) {
+      setAuthError(err?.message || "Login failed.")
+    } finally {
+      setAuthBusy(false)
+    }
+  }
+
+  async function handleLogout() {
+    const token = localStorage.getItem("jwt_token")
+    try {
+      if (token) {
+        await fetch(`${baseURL()}/api/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Token ${token}` },
+        })
+      }
+    } catch {
+      // ignore logout errors
+    } finally {
+      try {
+        localStorage.removeItem("jwt_token")
+      } catch {
+        // ignore
+      }
+      setAuthUser(null)
+      setActive("dashboard")
+    }
+  }
+
+  function openReset() {
+    setShowReset(true)
+    setShowVerify(false)
+    setResetStep("request")
+    setResetUsername(authUsername.trim() || "")
+    setResetId("")
+    setResetCode("")
+    setResetPassword("")
+    setResetConfirm("")
+    setResetError(null)
+    setResetExpires("")
+  }
+
+  function closeReset() {
+    setShowReset(false)
+    setResetStep("request")
+    setResetUsername("")
+    setResetId("")
+    setResetCode("")
+    setResetPassword("")
+    setResetConfirm("")
+    setResetError(null)
+    setResetExpires("")
+  }
+
+  function openVerify() {
+    setShowVerify(true)
+    setShowReset(false)
+    setVerifyStep("request")
+    setVerifyUsername(authUsername.trim() || "")
+    setVerifyId("")
+    setVerifyCode("")
+    setVerifyError(null)
+    setVerifyExpires("")
+  }
+
+  function closeVerify() {
+    setShowVerify(false)
+    setVerifyStep("request")
+    setVerifyUsername("")
+    setVerifyId("")
+    setVerifyCode("")
+    setVerifyError(null)
+    setVerifyExpires("")
+  }
+
+  async function handleResetRequest() {
+    if (!resetUsername.trim()) {
+      setResetError("Enter your username to continue.")
+      return
+    }
+    setResetBusy(true)
+    setResetError(null)
+    try {
+      const res = await fetch(`${baseURL()}/api/auth/forgot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: resetUsername.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data?.error || "Could not start reset.")
+      }
+      setResetId(data.reset_id || "")
+      setResetExpires(data.expires_at || "")
+      setResetStep("verify")
+    } catch (err: any) {
+      setResetError(err?.message || "Could not start reset.")
+    } finally {
+      setResetBusy(false)
+    }
+  }
+
+  async function handleResetConfirm() {
+    if (!resetCode.trim() || !resetPassword.trim() || !resetConfirm.trim()) {
+      setResetError("Fill in the reset code and both password fields.")
+      return
+    }
+    if (resetPassword !== resetConfirm) {
+      setResetError("Passwords do not match.")
+      return
+    }
+    setResetBusy(true)
+    setResetError(null)
+    try {
+      const res = await fetch(`${baseURL()}/api/auth/reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reset_id: resetId,
+          code: resetCode.trim(),
+          new_password: resetPassword,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data?.error || "Reset failed.")
+      }
+      setResetStep("done")
+      setAuthUsername(resetUsername.trim())
+      setResetPassword("")
+      setResetConfirm("")
+    } catch (err: any) {
+      setResetError(err?.message || "Reset failed.")
+    } finally {
+      setResetBusy(false)
+    }
+  }
+
+  async function handleVerifyRequest() {
+    if (!verifyUsername.trim()) {
+      setVerifyError("Enter your username to continue.")
+      return
+    }
+    setVerifyBusy(true)
+    setVerifyError(null)
+    try {
+      const res = await fetch(`${baseURL()}/api/auth/verify/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: verifyUsername.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data?.error || "Could not send verification.")
+      }
+      if (data?.status === "already_verified") {
+        setVerifyStep("done")
+        return
+      }
+      setVerifyId(data.verification_id || "")
+      setVerifyExpires(data.expires_at || "")
+      setVerifyStep("confirm")
+    } catch (err: any) {
+      setVerifyError(err?.message || "Could not send verification.")
+    } finally {
+      setVerifyBusy(false)
+    }
+  }
+
+  async function handleVerifyConfirm() {
+    if (!verifyCode.trim()) {
+      setVerifyError("Enter the verification code.")
+      return
+    }
+    setVerifyBusy(true)
+    setVerifyError(null)
+    try {
+      const res = await fetch(`${baseURL()}/api/auth/verify/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verification_id: verifyId,
+          username: verifyUsername.trim(),
+          code: verifyCode.trim(),
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data?.error || "Verification failed.")
+      }
+      setVerifyStep("done")
+    } catch (err: any) {
+      setVerifyError(err?.message || "Verification failed.")
+    } finally {
+      setVerifyBusy(false)
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="authShell">
+        <div className="authCard">
+          <div className="authTitle">Checking session...</div>
+          <div className="muted">One moment while we verify access.</div>
         </div>
+      </div>
+    )
+  }
 
-        <nav className="nav">
-          {NAV.map((item) => (
-            <button
-              key={item.key}
-              className={cx("navItem", active === item.key && "navItemActive")}
-              onClick={() => setActive(item.key)}
-              type="button"
-            >
-              <span className={cx("navIcon", active === item.key && "navIconActive")}>{item.icon}</span>
-              <span className="navLabel">{item.label}</span>
-              <Pill tone={item.pill.tone}>{item.pill.text}</Pill>
-            </button>
-          ))}
-        </nav>
-
-        <div className="runtime">
-          <div className="runtimeTitle">Powered by BatchOps</div>
-          <div className="runtimeText">Secure processing and background jobs</div>
-          <div className="runtimeText">Health monitoring active</div>
+  if (!authUser) {
+    return (
+      <div className="authShell">
+        <div className="authBackdrop">
+          <div className="authBlob authBlobOne" />
+          <div className="authBlob authBlobTwo" />
         </div>
-      </aside>
-
-      <main className="main">
-        <div className="topbar">
-          <div className="topbarLeft" />
-          <div className="topbarRight">
-            <div className="status">
-              <span className={cx("statusDot", systemOnline ? "ok" : "bad")} />
-              <span className="statusText">{systemOnline ? "System Online" : "System Offline"}</span>
+        <div className="authLayout">
+          <div className="authVisual">
+            <div className="authBrandRow">
+              <div className="authMark">BO</div>
+              <div>
+                <div className="authBrandName">BatchOps</div>
+                <div className="authBrandSub">School data, made simple</div>
+              </div>
             </div>
-            <label className="switch">
-              <input type="checkbox" checked={systemOnline} onChange={(e) => setSystemOnline(e.target.checked)} />
-              <span className="slider" />
-            </label>
+            <h1 className="authHeadline">All your school files, in one calm workspace.</h1>
+            <p className="authLead">
+              Upload, check, and share results without the technical noise. Everyone sees what they need, nothing more.
+            </p>
+            <div className="authBadgeRow">
+              <span className="authBadge">Access levels</span>
+              <span className="authBadge">Clear status</span>
+              <span className="authBadge">Safe records</span>
+            </div>
+            <div className="authFlow">
+              <div className="authStep">
+                <div className="authStepBadge">1</div>
+                <div>
+                  <div className="authStepTitle">Collect</div>
+                  <div className="authStepText">Departments send files to one place, on schedule.</div>
+                </div>
+              </div>
+              <div className="authStep">
+                <div className="authStepBadge">2</div>
+                <div>
+                  <div className="authStepTitle">Check</div>
+                  <div className="authStepText">We look for missing data and keep everyone informed.</div>
+                </div>
+              </div>
+              <div className="authStep">
+                <div className="authStepBadge">3</div>
+                <div>
+                  <div className="authStepTitle">Share</div>
+                  <div className="authStepText">Download clean reports when everything is ready.</div>
+                </div>
+              </div>
+            </div>
+            <ul className="authChecklist">
+              <li>Admins set schedules and see everything.</li>
+              <li>Moderators review issues and keep things on track.</li>
+              <li>Users upload files and watch progress.</li>
+            </ul>
+          </div>
+          <div className="authPanel">
+            <div className="authCard">
+              {showReset ? (
+                <>
+                  <div className="authCardHeader">
+                    <div className="authTitle">Reset password</div>
+                    <div className="authSubtitle">We will help you get back into your account.</div>
+                  </div>
+                  {resetError ? <div className="errorLine">{resetError}</div> : null}
+                  {resetStep === "request" ? (
+                    <>
+                      <div className="field">
+                        <label className="label">Username</label>
+                        <input
+                          className="input"
+                          value={resetUsername}
+                          onChange={(e) => setResetUsername(e.target.value)}
+                          placeholder="e.g. ops_admin"
+                        />
+                      </div>
+                      <button className="primaryBtn authSubmit" type="button" disabled={resetBusy} onClick={handleResetRequest}>
+                        {resetBusy ? "Sending..." : "Send reset code"}
+                      </button>
+                      <div className="authNote">We will email a reset code to the address on file.</div>
+                    </>
+                  ) : null}
+                  {resetStep === "verify" ? (
+                    <>
+                      <div className="field">
+                        <label className="label">Reset code</label>
+                        <input
+                          className="input"
+                          value={resetCode}
+                          onChange={(e) => setResetCode(e.target.value)}
+                          placeholder="6-digit code"
+                        />
+                      </div>
+                      <div className="field">
+                        <label className="label">New password</label>
+                        <input
+                          className="input"
+                          type="password"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                          placeholder="Create a new password"
+                        />
+                      </div>
+                      <div className="field">
+                        <label className="label">Confirm password</label>
+                        <input
+                          className="input"
+                          type="password"
+                          value={resetConfirm}
+                          onChange={(e) => setResetConfirm(e.target.value)}
+                          placeholder="Repeat the new password"
+                        />
+                      </div>
+                      {resetExpires ? (
+                        <div className="authNote">Code expires at {fmtDate(resetExpires)}.</div>
+                      ) : null}
+                      <button className="primaryBtn authSubmit" type="button" disabled={resetBusy} onClick={handleResetConfirm}>
+                        {resetBusy ? "Updating..." : "Update password"}
+                      </button>
+                    </>
+                  ) : null}
+                  {resetStep === "done" ? (
+                    <>
+                      <div className="authSuccess">Your password is updated. You can sign in now.</div>
+                      <button className="primaryBtn authSubmit" type="button" onClick={closeReset}>
+                        Return to sign in
+                      </button>
+                    </>
+                  ) : null}
+                  {resetStep !== "done" ? (
+                    <button className="authLink" type="button" onClick={closeReset}>
+                      Back to sign in
+                    </button>
+                  ) : null}
+                </>
+              ) : showVerify ? (
+                <>
+                  <div className="authCardHeader">
+                    <div className="authTitle">Verify email</div>
+                    <div className="authSubtitle">Confirm your email so you can sign in.</div>
+                  </div>
+                  {verifyError ? <div className="errorLine">{verifyError}</div> : null}
+                  {verifyStep === "request" ? (
+                    <>
+                      <div className="field">
+                        <label className="label">Username</label>
+                        <input
+                          className="input"
+                          value={verifyUsername}
+                          onChange={(e) => setVerifyUsername(e.target.value)}
+                          placeholder="e.g. ops_admin"
+                        />
+                      </div>
+                      <button className="primaryBtn authSubmit" type="button" disabled={verifyBusy} onClick={handleVerifyRequest}>
+                        {verifyBusy ? "Sending..." : "Send verification code"}
+                      </button>
+                      <div className="authNote">We will email a verification code to your address.</div>
+                    </>
+                  ) : null}
+                  {verifyStep === "confirm" ? (
+                    <>
+                      <div className="field">
+                        <label className="label">Verification code</label>
+                        <input
+                          className="input"
+                          value={verifyCode}
+                          onChange={(e) => setVerifyCode(e.target.value)}
+                          placeholder="6-digit code"
+                        />
+                      </div>
+                      {verifyExpires ? (
+                        <div className="authNote">Code expires at {fmtDate(verifyExpires)}.</div>
+                      ) : null}
+                      <button className="primaryBtn authSubmit" type="button" disabled={verifyBusy} onClick={handleVerifyConfirm}>
+                        {verifyBusy ? "Verifying..." : "Verify email"}
+                      </button>
+                    </>
+                  ) : null}
+                  {verifyStep === "done" ? (
+                    <>
+                      <div className="authSuccess">Your email is verified. You can sign in now.</div>
+                      <button className="primaryBtn authSubmit" type="button" onClick={closeVerify}>
+                        Return to sign in
+                      </button>
+                    </>
+                  ) : null}
+                  {verifyStep !== "done" ? (
+                    <button className="authLink" type="button" onClick={closeVerify}>
+                      Back to sign in
+                    </button>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <div className="authCardHeader">
+                    <div className="authTitle">Sign in</div>
+                    <div className="authSubtitle">Use your account to open your workspace.</div>
+                  </div>
+                  {authError ? <div className="errorLine">{authError}</div> : null}
+                  <div className="field">
+                    <label className="label">Username</label>
+                    <input
+                      className="input"
+                      value={authUsername}
+                      onChange={(e) => setAuthUsername(e.target.value)}
+                      placeholder="e.g. ops_admin"
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="label">Password</label>
+                    <input
+                      className="input"
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <button className="primaryBtn authSubmit" type="button" disabled={authBusy} onClick={handleLogin}>
+                    {authBusy ? "Signing in..." : "Sign in"}
+                  </button>
+                  <div className="authHint">Admins can add new accounts for the team.</div>
+                  <button className="authLink" type="button" onClick={openReset}>
+                    Forgot password?
+                  </button>
+                  <button className="authLink" type="button" onClick={openVerify}>
+                    Verify email
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="authFootnote">
+              Need access? Ask your admin to add you.
+            </div>
           </div>
         </div>
+      </div>
+    )
+  }
 
-        <div className="content">{Page}</div>
-      </main>
-    </div>
+  return (
+    <AuthContext.Provider value={authValue}>
+      <div className="shell">
+        <aside className="sidebar">
+          <div className="brand">
+            <div className="brandMark">BO</div>
+            <div>
+              <div className="brandName">BatchOps</div>
+              <div className="brandSub">School workflows</div>
+            </div>
+          </div>
+
+          <nav className="nav">
+            {NAV.map((item) => (
+              <button
+                key={item.key}
+                className={cx("navItem", active === item.key && "navItemActive")}
+                onClick={() => setActive(item.key)}
+                type="button"
+              >
+                <span className={cx("navIcon", active === item.key && "navIconActive")}>{item.icon}</span>
+                <span className="navLabel">{item.label}</span>
+                <Pill tone={item.pill.tone}>{item.pill.text}</Pill>
+              </button>
+            ))}
+          </nav>
+
+          <div className="runtime">
+            <div className="runtimeTitle">Powered by BatchOps</div>
+            <div className="runtimeText">Secure processing and background jobs</div>
+            <div className="runtimeText">Health monitoring active</div>
+          </div>
+        </aside>
+
+        <main className="main">
+          <div className="topbar">
+            <div className="topbarLeft" />
+            <div className="topbarRight">
+              <div className="roleBadge">{role.toUpperCase()}</div>
+              <div className="userMeta">{authUser.username}</div>
+              <button className="ghostBtn ghostBtnSmall" type="button" onClick={handleLogout}>
+                Sign out
+              </button>
+              <div className="status">
+                <span className={cx("statusDot", systemOnline ? "ok" : "bad")} />
+                <span className="statusText">{systemOnline ? "System Online" : "System Offline"}</span>
+              </div>
+              <label className="switch">
+                <input type="checkbox" checked={systemOnline} onChange={(e) => setSystemOnline(e.target.checked)} />
+                <span className="slider" />
+              </label>
+            </div>
+          </div>
+
+          <div className="content">{Page}</div>
+        </main>
+      </div>
+    </AuthContext.Provider>
   )
 }
