@@ -32,8 +32,11 @@ from .workers import (
     _load_df,
     _append_incident_event,
     _apply_processing_plan,
+    _apply_alias_columns,
+    _coerce_numeric_columns,
     _normalize_column_label,
     _build_pdf_table,
+    _sanitize_json,
 )
 from .metrics import get_metrics_data
 from .queues import default_queue, redis_conn
@@ -53,6 +56,8 @@ def regenerate_report(upload: Upload) -> str | None:
         return None
 
     df.columns = [_normalize_column_label(c) for c in df.columns]
+    df, matched_aliases = _apply_alias_columns(df)
+    df, _ = _coerce_numeric_columns(df)
     summary_rows = [
         ["upload_id", str(upload.upload_id)],
         ["department", upload.department],
@@ -67,6 +72,8 @@ def regenerate_report(upload: Upload) -> str | None:
         "columns": df.columns.tolist(),
         "summary_rows": list(summary_rows),
     }
+    if matched_aliases:
+        summary["column_aliases"] = matched_aliases
 
     numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
     summary["numeric_cols"] = numeric_cols
@@ -79,13 +86,7 @@ def regenerate_report(upload: Upload) -> str | None:
                 summary_rows.append([f"{col}.{stat_name}", value])
     summary["summary_rows"] = summary_rows
 
-    for c in df.columns:
-        series = df[c]
-        if series.dtype == "object":
-            series = series.astype(str).str.strip()
-            df[c] = pd.to_numeric(series, errors="ignore")
-        else:
-            df[c] = series
+    df, _ = _coerce_numeric_columns(df)
 
     mode = (upload.process_mode or "transform_gradebook").strip().lower()
     export_dir = getattr(settings, "EXPORT_DIR", "/app/storage/exports")
@@ -117,7 +118,7 @@ def regenerate_report(upload: Upload) -> str | None:
     upload.report_path = export_path
     upload.report_generated_at = timezone.now()
     upload.report_csv = csv_buf.getvalue()
-    upload.report_meta = summary
+    upload.report_meta = _sanitize_json(summary)
     pdf_bytes = _build_pdf_table(f"Upload {upload.upload_id}", pdf_columns, pdf_rows or [])
     upload.report_pdf = base64.b64encode(pdf_bytes).decode("ascii")
     upload.save(update_fields=["report_path", "report_generated_at", "report_csv", "report_pdf", "report_meta"])
@@ -253,12 +254,25 @@ class IncidentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["patch", "post"])
     def assign(self, request, incident_id=None):
         incident = self.get_object()
-        incident.assignee = request.data.get("assignee")
+        assignee = (request.data.get("assignee") or "").strip()
+        actor = request.user.username or "engine"
+
+        if request.user.is_admin():
+            if not assignee:
+                return Response({"error": "assignee required"}, status=status.HTTP_400_BAD_REQUEST)
+            target = User.objects.filter(username__iexact=assignee).first()
+            if not target or not target.is_moderator():
+                return Response({"error": "assignee must be a moderator"}, status=status.HTTP_400_BAD_REQUEST)
+            incident.assignee = target.username
+        else:
+            if incident.assignee and incident.assignee != request.user.username:
+                return Response({"error": "incident already assigned"}, status=status.HTTP_403_FORBIDDEN)
+            incident.assignee = request.user.username
         incident.state = "in_progress"
         _append_incident_event(
             incident,
             f"Assigned to {incident.assignee or 'unassigned'}",
-            actor=request.data.get("actor") or "engine",
+            actor=actor,
             notes=request.data.get("notes"),
         )
         incident.save(update_fields=["assignee", "state", "updated_at", "timeline"])
