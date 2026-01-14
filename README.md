@@ -1,235 +1,400 @@
 # BatchOps
 
-Incident-resilient batch control room for schools and colleges. BatchOps ingests student files, standardizes and validates them, lets operators amend data on the fly, and publishes CSV/PDF reports while auto-triaging failures into incidents. The platform also orchestrates school-friendly automation jobs (attendance reminders, health checks, scrapers, backups) through an RQ worker + scheduler stack.
+BatchOps is a batch processing control room for schools and colleges. It ingests departmental files, standardizes and validates them, applies operator selected changes, and publishes CSV/PDF reports. Failures are converted into incidents with a structured analysis and retry workflow, and scheduled jobs automate recurring campus operations.
 
 ---
 
 ## Table of Contents
 
-1. [Vision & Use Cases](#vision--use-cases)
-2. [Architecture Overview](#architecture-overview)
-3. [Domain & Data Model](#domain--data-model)
-4. [Pipeline & Processing Plans](#pipeline--processing-plans)
-5. [Frontend Experience](#frontend-experience)
-6. [Automation & Schedules](#automation--schedules)
-7. [Reporting & Downloads](#reporting--downloads)
-8. [Deploying & Running](#deploying--running)
-9. [Operations Runbook](#operations-runbook)
-10. [Extending BatchOps](#extending-batchops)
-11. [API Surface](#api-surface)
+1. What BatchOps Is
+2. Architecture Overview
+3. Core Workflow
+4. Pipeline Stages (Deep Dive)
+5. Processing Plans
+6. Incident Workflow
+7. Authentication and Roles
+8. Email Verification and Password Reset
+9. Data Model
+10. Automation and Scheduling
+11. Reports and Downloads
+12. SMTP Email Delivery
+13. Migrations (Full List)
+14. Local Development
+15. Environment Variables
+16. API Surface (Summary)
+17. Troubleshooting
 
 ---
 
-## Vision & Use Cases
+## What BatchOps Is
 
-BatchOps was built for campus operations desks that need a single control room for:
+BatchOps is a single interface where school operations teams can:
 
-- **Transforming gradebooks** into standardized, school-branded summaries.
-- **Appending or deleting records** from uploaded rosters before they enter downstream ERPs.
-- **Handling more complex prompts** (custom rules/instructions) without writing code.
-- **Scheduling unattended jobs**: bulk reminders, system-status digests, web scraping, ingestion jobs, database cleanup, and daily backups.
-- **Maintaining incident hygiene**: known errors, auto-retries, RCA workflow, and archival for audits.
+- upload files from departments,
+- apply consistent processing steps,
+- publish clean reports,
+- track failures in an incident workflow,
+- and run scheduled jobs for recurring tasks.
 
-The platform keeps uploads cached locally until submitted, remembers the last page an operator visited, converts every timestamp to IST (+30 min offset per ops request), and preserves reports so reloads and navigation never lose context.
+It is admin provisioned (no public sign up) and uses role based access control (RBAC).
 
 ---
 
 ## Architecture Overview
 
-| Layer | Technology | Notes |
+| Layer | Tech | Purpose |
 | --- | --- | --- |
-| Frontend | React 18 + Vite + TypeScript, single shell (`frontend/src/App.tsx`) | LocalStorage & IndexedDB power view persistence + upload queue. |
-| API | Django 4.2 + Django REST Framework | `backend/core` app exposes all resources under `/api`. |
-| Data | PostgreSQL 15 | Uploads, jobs, job runs, incidents, tickets, known errors. |
-| Workers | RQ + Redis 7 | `job_chain_standardize` pipeline, automation jobs, and cron dispatch. |
-| Scheduler | rq-scheduler | Registers cron expressions, enqueues jobs via Redis. |
-| Messaging | Redis | Shared queue between API, worker, scheduler. |
-| Observability | Prometheus scrape (`/api/metrics`), dashboard metrics, `/api/health/` | Health card highlights Redis/Postgres/RQ worker status. |
+| Frontend | React + Vite + TypeScript | Single SPA in `frontend/src/App.tsx`. |
+| API | Django 4.2 + DRF | REST endpoints in `backend/core/views.py`. |
+| Data | PostgreSQL | Uploads, runs, incidents, users, schedules. |
+| Queue | Redis + RQ | Background processing and retries. |
+| Scheduler | rq-scheduler | Cron execution. |
+| Email | SMTP | Verification and reset codes. |
 
-**docker-compose services**
+`docker-compose.yml` runs:
 
-1. `backend`: Django API (`python manage.py runserver`).
-2. `worker`: executes uploads + automation (`python manage.py rqworker default`).
-3. `scheduler`: cron loop (`python manage.py rqscheduler --interval 10`).
-4. `db`: PostgreSQL with persistent volume.
-5. `redis`: queue backend for worker + scheduler.
-6. Frontend runs outside Compose via `npm run dev` and connects to backend at `http://localhost:8000` (configurable with `VITE_API_BASE_URL`).
+- `backend`: Django API
+- `worker`: RQ worker for pipeline and automations
+- `scheduler`: cron dispatcher
+- `redis`: queue
+- `db`: Postgres
 
 ---
 
-## Domain & Data Model
+## Core Workflow
+
+1. A user uploads files in Batch Intake.
+2. Uploads are queued and processed by the worker.
+3. The pipeline executes five stages in order.
+4. If a stage fails, an incident is created and shown in Batch Issues.
+5. When processing succeeds, reports are published as CSV and PDF.
+6. Operators download results or retry failed items.
+
+---
+
+## Pipeline Stages (Deep Dive)
+
+Pipeline implementation lives in `backend/core/workers.py`.
+
+### 1) `standardize_results`
+
+Purpose: normalize the file into a consistent dataframe.
+
+Key actions:
+- Load CSV/XLSX/PDF into pandas.
+- Normalize column names and whitespace.
+- For PDF, attempt table extraction and realign split identifiers.
+- Emit a step log with schema details.
+
+Failure conditions:
+- Missing table from PDF.
+- File cannot be parsed.
+
+### 2) `validate_results`
+
+Purpose: verify required columns and basic data quality.
+
+Key actions:
+- Confirm required columns exist.
+- Check for empty or malformed key fields.
+- Identify schema mismatches.
+
+Failure conditions:
+- Required columns missing.
+- Critical fields empty.
+
+### 3) `transform_gradebook`
+
+Purpose: apply the operator selected processing plan.
+
+Key actions:
+- Trim strings.
+- Attempt numeric coercion.
+- Apply transform, append, delete, or custom rules.
+
+Failure conditions:
+- Invalid plan payloads.
+- JSON parsing errors.
+
+### 4) `generate_summary`
+
+Purpose: generate descriptive statistics for reports.
+
+Key actions:
+- Build row and column counts.
+- Compute numeric stats.
+- Create summary rows for metadata.
+
+### 5) `publish_results`
+
+Purpose: produce and store outputs.
+
+Key actions:
+- Generate CSV (summary or processed dataset).
+- Generate PDF with fpdf.
+- Store CSV and PDF in DB and on disk.
+- Mark upload as published.
+
+---
+
+## Processing Plans
+
+Processing plans are chosen in Batch Intake and stored in:
+
+- `Upload.process_mode`
+- `Upload.process_config`
+
+Available plans:
+
+- Transform gradebook (default)  
+  Produces summary tables instead of raw data.
+- Append records  
+  `process_config.records` accepts a list of objects.
+- Delete records  
+  Multiple rules supported using column/value matches.
+- Custom rules  
+  Stores a human instruction note; no automatic change.
+
+---
+
+## Incident Workflow
+
+If any pipeline stage fails, the system creates:
+
+1. `Incident` (primary record)
+2. `Ticket` (action tracking)
+
+Incident lifecycle:
+
+- `open` -> `in_progress` -> `resolved`
+- Optional: `archive`
+
+Incident data includes:
+- root cause
+- corrective action
+- impact summary
+- analysis notes
+- timeline events
+- retry counters
+
+Known errors are matched using regex patterns in `KnownError` and can auto tag severity, RCA, and fixes.
+
+---
+
+## Authentication and Roles
+
+Authentication uses DRF Token auth with:
+```
+Authorization: Token <token>
+```
+
+Role matrix:
+
+| Capability | Admin | Moderator | User |
+| --- | --- | --- | --- |
+| Upload files | Yes | Yes | Yes |
+| View runs | Yes | Yes | Yes |
+| View issues | Yes | Yes | Yes |
+| Manage issues | Yes | Yes | No |
+| Create/edit schedules | Yes | No | No |
+| Run schedules | Yes | Yes | Yes |
+
+Admins are created via Django admin and can create other accounts.
+
+---
+
+## Email Verification and Password Reset
+
+Email verification is required for user and moderator accounts.
+
+Flow:
+
+1. Admin creates a user with email.
+2. User clicks "Verify email" on the sign in page.
+3. A code is sent via SMTP.
+4. User confirms the code and can sign in.
+
+Password reset:
+
+1. User clicks "Forgot password".
+2. A reset code is emailed.
+3. User enters code and new password.
+
+Models:
+- `EmailVerificationRequest`
+- `PasswordResetRequest`
+
+---
+
+## Data Model
 
 | Model | Purpose |
 | --- | --- |
-| `Upload` | Stores file metadata, department, status, processing plan, CSV/PDF reports, summary metadata, and processing timestamps. |
-| `Job` | Represents reusable automation, including callable path, args/kwargs, job type (`python`), cron expression, and config. |
-| `JobRun` | Execution records (pipeline runs or scheduled jobs), step details, logs, exit codes, durations. |
-| `KnownError` | Regex + remediation library for automatically tagging incidents with severity, RCA, corrective action, and auto-retry rules. |
-| `Incident` | Full lifecycle (state, severity, root cause, corrective action, impact summary, timeline events, auto-retry counters, assignee). |
-| `Ticket` | Action items linked to incidents (assign/resolve flow). |
-| `Upload.process_config` | JSON field describing operator-selected processing plan (append/delete/custom instructions). |
-
-PostgreSQL migrations also seed six default scheduled jobs and create `report_pdf` storage (base64) to serve PDFs directly via the API.
-
----
-
-## Pipeline & Processing Plans
-
-The worker (`backend/core/workers.py`) owns the **five-step pipeline**:
-
-1. `standardize_results` - loads CSV/XLSX/PDF into pandas (with PDF heuristics to merge split names/IDs) and collects schema metrics.
-2. `validate_results` - enforces presence of required columns (department aware), rows, and general sanity checks.
-3. `transform_gradebook` - trims strings, attempts safe numeric coercion, and applies the operator-selected **processing plan**:
-   - **Transform gradebook** (default) produces KPI-rich summary tables.
-   - **Append record(s)** merges user-provided records (`process_config.records` list or single dict).
-   - **Delete record(s)** removes rows by exact match using one or many rules.
-   - **Custom rules** simply stores the instruction narrative so downstream humans know what to do.
-4. `generate_summary` - builds descriptive stats for numeric columns plus metadata rows (upload ID, department, filename, schema).
-5. `publish_results` - emits both CSV & PDF outputs. Transform plans become summary tables, while append/delete/custom plans publish the transformed dataset itself. Reports are kept on disk (`report_path`), in Postgres (`report_csv`, `report_pdf` base64), and timestamped for UI polling.
-
-If any step fails, `_create_incident_and_ticket` matches known errors, seeds incident/ticket records, logs metrics, and optionally requeues retries through RQ.
+| `User` | Authentication, role, email verification. |
+| `Upload` | File metadata, status, process plan, reports. |
+| `Job` | Scheduled automation definitions. |
+| `JobRun` | Execution records and step details. |
+| `KnownError` | Regex patterns for auto matching incidents. |
+| `Incident` | Full RCA workflow and timeline. |
+| `DepartmentSource` | Simulated department feeds. |
+| `DepartmentRecord` | Sample records ingested by department jobs. |
+| `EmailVerificationRequest` | Email verification codes. |
+| `PasswordResetRequest` | Password reset codes. |
 
 ---
 
-## Frontend Experience
+## Automation and Scheduling
 
-`frontend/src/App.tsx` renders the full SPA with a sidebar-driven layout:
+Automations live in `backend/core/automation/tasks.py`.
 
-- **Dashboard**: KPIs for today's uploads, incident counts, MTTR placeholder, pipeline overview, system health pulled from `/api/health/`, and Prometheus JSON guardrails.
-- **Uploads**:
-  - Queue up to **5 files** (CSV, Excel, PDF). IndexedDB keeps the queue even if the page reloads.
-  - LocalStorage caches the most recent upload ID to auto-refresh job runs and incidents.
-  - Operators pick the **processing plan** (transform, append, delete, custom) and provide record payloads or instructions. Multiple append/delete records are supported.
-  - Upload rows show department, notes, processing state, linked job runs/incidents, and actions to download CSV/PDF outputs.
-  - Upload form previews status, pipeline logs, and ensures queued files persist until the user explicitly removes them.
-- **Job Runs**: Tabular history with durations, statuses, associated upload IDs, and modal details (per-step timings, logs). Useful for auditing both pipeline runs and scheduled jobs.
-- **Incidents**: Full workflow with filters, severity badges, timeline, known error match, action buttons (assign/analyze/retry/archive/resolve), impact summary, resolution report, and auto-retry counters.
-- **Reports**: Given a `job_run_id`, downloads CSV or PDF (polling `/api/reports/summary/` until published). Guards against failed or still-running jobs.
-- **Jobs**: Admin console to create/update/trigger cron jobs. Users can set cron expressions (e.g., `*/3 * * * *` for every three minutes), specify Python callables, and pass JSON args. Inline helpers describe popular automation tasks (bulk emails, scraping, file ingest, cleanup, backups).
+Examples:
+- `send_attendance_reminders`
+- `send_system_status_digest`
+- `run_web_scrape`
+- `schedule_file_ingest`
+- `purge_old_records`
+- `run_daily_backup`
 
-Global UX details: persistent navigation state, IST-only timestamps (with +30-minute correction), file size helpers, and consistent card/table styling from `frontend/src/app.css`.
-
----
-
-## Automation & Schedules
-
-`core/automation/tasks.py` contains ready-to-use callables, each of which can be wired to a cron schedule or triggered manually:
-
-- `send_attendance_reminders`: bulk reminders/emails for absent students.
-- `send_system_status_digest`: summarises health metrics and runs as a morning digest.
-- `run_web_scrape`: fetches remote resources (e.g., government notices) for ingestion.
-- `schedule_file_ingest`: ingests data from external S3/FTP sources at fixed times.
-- `purge_old_records`: data hygiene and database cleanup.
-- `run_daily_backup`: exports data snapshots to shared storage.
-
-Cron expressions follow the standard 5-field format (minute hour day-of-month month day-of-week). The scheduler registers/de-registers entries whenever a job is created/updated or deleted, so the UI remains the single source of truth for automation.
-
-Schools can leverage these primitives for broader operations: sending reminders, pushing system statuses, scraping attendance portals, processing nightly gradebooks, cleaning stale submissions, and running system health checks without manual intervention.
-
----
-
-## Reporting & Downloads
-
-- Reports live both on disk (`EXPORT_DIR`) and inside the Upload row as CSV text + base64 PDF.
-- `/api/reports/summary/?upload_id=...&format=csv|pdf` streams the latest artifact; the frontend additionally caches report payloads client-side for instant downloads.
-- PDF generation uses `fpdf` with equal-width columns, alternating row fills, and titles set to the original filename so audit PDFs look clean.
-- CSV outputs differ based on the processing plan:
-  - Transform plan -> summary table (upload metadata + numeric stats).
-  - Append/delete/custom -> fully processed dataset reflecting the requested edits.
-
-Operators can therefore publish a gradebook, double-check appended rows, or delete erroneous entries and still hand off a downloadable PDF/CSV pair for compliance.
-
----
-
-## Deploying & Running
-
-### Docker Compose (recommended)
-
-```bash
-docker compose up --build
+Cron format uses 5 fields:
+```
+minute hour day month weekday
 ```
 
-This builds backend + frontend images, runs migrations, and starts API, worker, scheduler, Redis, and Postgres containers. Frontend can continue to run via Vite for faster development iterations.
+The scheduler registers and updates cron entries whenever Jobs are created or updated.
 
-### Local Development
+---
 
-**Backend**
-```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-export DJANGO_SETTINGS_MODULE=config.settings
-export REDIS_URL=redis://localhost:6379/0
-python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
+## Reports and Downloads
+
+Reports are stored in:
+
+- Postgres (`report_csv`, `report_pdf`)
+- Disk (`EXPORT_DIR`)
+
+Endpoint:
+```
+GET /api/reports/summary/?upload_id=<id>&format=csv|pdf
 ```
 
-Run worker + scheduler in separate terminals:
-```bash
-python manage.py rqworker default
-python manage.py rqscheduler --interval 10
+Transform plan returns a summary table. Append/delete/custom returns the processed dataset.
+
+---
+
+## SMTP Email Delivery
+
+BatchOps sends verification and password reset emails through SMTP.
+
+Example Gmail SMTP settings:
+```
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=you@gmail.com
+EMAIL_HOST_PASSWORD=your_app_password
+EMAIL_USE_TLS=1
+DEFAULT_FROM_EMAIL=you@gmail.com
 ```
 
-**Frontend**
-```bash
+Notes:
+- Use an app password for Gmail.
+- Any SMTP provider can be used by changing these values.
+- Check backend logs if email delivery fails.
+
+---
+
+## Migrations (Full List)
+
+All migrations live in `backend/core/migrations`.
+
+- `0001_initial.py`: base schema (users, uploads, jobs, incidents, tickets, known errors).
+- `0002_jobrun_details.py`: adds job run details and logs.
+- `0003_upload_report_fields.py`: adds report fields to uploads.
+- `0004_upload_report_storage.py`: refines report storage metadata.
+- `0005_incident_workflow_fields.py`: expands incident workflow fields.
+- `0006_seed_default_jobs.py`: seeds default automation jobs.
+- `0007_upload_processing_plan.py`: adds processing plan fields.
+- `0008_upload_report_pdf.py`: adds report PDF storage.
+- `0009_department_sources.py`: introduces department sources and records.
+- `0010_seed_department_sources.py`: seeds department sample data.
+- `0011_seed_department_ingest_jobs.py`: seeds department ingest jobs.
+- `0012_seed_all_departments_job.py`: adds the combined ingest job.
+- `0012_rename_core_deprecord_source_recorded_idx_core_depart_source__0ab2ee_idx_and_more.py`: index rename cleanup.
+- `0013_merge_0012_branches.py`: merge migration for the dual 0012 branch.
+- `0014_password_reset_requests.py`: adds password reset request model.
+- `0015_email_verification_requests.py`: adds email verification model and email_verified flag.
+- `0015_rename_core_passwo_user_id_d33f1f_idx_core_passwo_user_id_f12091_idx_and_more.py`: index rename cleanup.
+- `0016_merge_0015_branches.py`: merge migration for the dual 0015 branch.
+- `0017_rename_core_emailv_user_id_3c2b2d_idx_core_emailv_user_id_63ceb9_idx_and_more.py`: index rename cleanup for email verification.
+
+If you see a migration conflict, it means two branches created migrations with the same number. Resolve by adding a merge migration (already included for current branches).
+
+---
+
+## Local Development
+
+### Docker (recommended)
+```
+docker compose up -d --build
+```
+
+### Create admin
+```
+docker compose exec backend python manage.py createsuperuser
+```
+
+### Frontend
+```
 cd frontend
 npm install
 npm run dev -- --host --port 5173
 ```
 
-### Environment Variables
+If backend runs elsewhere:
+```
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+---
+
+## Environment Variables
+
+Backend:
 
 - `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
 - `REDIS_URL`
 - `DJANGO_SETTINGS_MODULE`
-- Optional `EXPORT_DIR` (defaults to `/app/storage/exports`)
-- Frontend: `VITE_API_BASE_URL`
+- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL`
+
+Frontend:
+
+- `VITE_API_BASE_URL`
 
 ---
 
-## Operations Runbook
+## API Surface (Summary)
 
-1. **Verify health**: `/api/health/` should report `Postgres: healthy`, `Redis: healthy`, and `RQ Workers: n online`. The dashboard health card echoes this.
-2. **Workers idle?** Ensure both `rqworker` and `rqscheduler` processes are running. Cron jobs (e.g., `*/3 * * * *`) only enqueue when the scheduler is alive.
-3. **Uploads disappear?** IndexedDB caches queued files; ensure the browser allows storage. Upload rows persist until the operator removes them manually.
-4. **Reports missing?** Workers save CSV + PDF; the frontend polls up to 6 seconds before warning the user. Check worker logs for `publish_results` errors.
-5. **PDF parsing issues?** `_load_df` merges identifier lines and aligns tokens, but malformed PDFs may still fail. Incidents will show `No table found in PDF pages` or `Required columns missing` along with matched known errors.
-6. **Scheduling reliability**: After editing a job's cron expression, look for `scheduler` logs confirming registration; trigger the job manually via the UI to test connectivity.
-7. **Incident workflow**: Operators can analyze (fill in impact summary, RCA, corrective action), retry (re-queue pipeline), resolve (mark timeline + closure), and archive (for future audits). All fields stay editable for richer reporting.
-8. **Time zones**: All UI times go through `fmtDate` (IST only). Backend stores UTC; no changes needed server-side.
-9. **Troubleshooting Redis**: Dashboard shows Redis status as `unhealthy` if `redis` container is down or `REDIS_URL` misconfigured. Fix the backing service, then refresh `/api/health/`.
-
----
-
-## Extending BatchOps
-
-- **New processing plans**: Extend `_apply_processing_plan` with additional modes (e.g., curve scores, anonymize, merge duplicates) and expose them in the Uploads form.
-- **Automation ideas** for school ops:
-  1. Bulk SMS/email alerts for attendance or fee reminders.
-  2. Scheduled web scraping of exam portals for new results.
-  3. Periodic ingestion of files dropped in shared drives.
-  4. Database cleanup scripts (old tickets/incidents).
-  5. System health checks with notifications on failure.
-  6. Daily/weekly backups to cloud storage.
-- **Observability**: Hook `/api/metrics` into Prometheus + Grafana dashboards. Add log shipping (e.g., Loki) for worker errors.
-- **Integrations**: Swap `send_attendance_reminders` implementation with real email/SMS providers, or push incidents into helpdesk tools via `Ticket` webhooks.
-
----
-
-## API Surface
-
-| Endpoint | Method(s) | Highlights |
+| Endpoint | Methods | Use |
 | --- | --- | --- |
-| `/api/uploads/` | CRUD + `/retry/` | Stores processing plan, references job runs & incidents. |
-| `/api/job-runs/` | GET/POST | Includes step logs, duration, upload reference. |
-| `/api/jobs/` | CRUD + `/trigger/` | Manage Python jobs and cron expressions. |
-| `/api/incidents/` | CRUD + `assign`, `analyze`, `resolve`, `retry`, `archive` | Tied to known errors, tickets, and uploads. |
-| `/api/tickets/` | CRUD + `assign`, `resolve` | Incident-backed ticket workflow. |
-| `/api/reports/summary/` | GET | Streams CSV/PDF for a given upload. |
-| `/api/dashboard-metrics` | GET | Aggregated KPIs for dashboard. |
-| `/api/metrics` | GET | Prometheus text-format counters. |
-| `/api/health/` | GET | Redis/Postgres/RQ worker heartbeat. |
+| `/api/auth/login` | POST | Sign in |
+| `/api/auth/verify/send` | POST | Send verification code |
+| `/api/auth/verify/confirm` | POST | Confirm verification |
+| `/api/auth/forgot` | POST | Send reset code |
+| `/api/auth/reset` | POST | Reset password |
+| `/api/uploads/` | CRUD + `/retry/` | Uploads |
+| `/api/job-runs/` | GET | Run history |
+| `/api/jobs/` | CRUD + `/trigger/` | Schedules |
+| `/api/incidents/` | CRUD + actions | Issues |
+| `/api/reports/summary/` | GET | CSV/PDF downloads |
+| `/api/health/` | GET | System health |
 
 ---
 
-BatchOps now ships with exhaustive documentation for every service, workflow, and operational guardrail. Use this README as the foundation for slide decks, onboarding guides, or audits - it mirrors the current implementation across frontend, backend, workers, and automation.
+## Troubleshooting
+
+- No admin styles in `/admin/`: set `DEBUG=1` in docker-compose and restart.
+- No email received: check SMTP credentials and backend logs.
+- Jobs not running: ensure `worker` and `scheduler` containers are running.
+- Verification required: users/moderators must verify email before login.
+
+---
+
+BatchOps is designed to be both understandable for new readers and detailed enough for technical review. This README mirrors the current implementation across frontend, backend, workers, and automation.
