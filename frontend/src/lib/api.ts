@@ -8,6 +8,17 @@ function withPageSize(params?: any) {
   return { page_size: DEFAULT_PAGE_SIZE, ...(params ?? {}) }
 }
 
+let authToken: string | null = null
+
+export function setApiToken(token: string | null) {
+  authToken = token
+  if (token) {
+    api.defaults.headers.common.Authorization = `Token ${token}`
+  } else {
+    delete api.defaults.headers.common.Authorization
+  }
+}
+
 const api: AxiosInstance = axios.create({
   baseURL,
   headers: {
@@ -17,7 +28,14 @@ const api: AxiosInstance = axios.create({
 
 // Interceptor: attach JWT from localStorage
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("jwt_token")
+  let token = authToken
+  if (!token) {
+    try {
+      token = localStorage.getItem("jwt_token")
+    } catch {
+      token = null
+    }
+  }
   if (token) {
     config.headers.Authorization = `Token ${token}`
   }
