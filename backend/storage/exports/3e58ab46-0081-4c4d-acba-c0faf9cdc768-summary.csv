@@ -1,0 +1,23 @@
+field,value
+upload_id,3e58ab46-0081-4c4d-acba-c0faf9cdc768
+department,Examination
+filename,sample_school_results.pdf
+rows,53
+cols,6
+columns,"student_id, student_name, class, subject, score, max"
+score.count,50.0
+score.mean,75.88
+score.std,9.960411433187254
+score.min,54.0
+score.25%,69.0
+score.50%,76.0
+score.75%,82.75
+score.max,100.0
+max.count,50.0
+max.mean,100.0
+max.std,0.0
+max.min,100.0
+max.25%,100.0
+max.50%,100.0
+max.75%,100.0
+max.max,100.0
