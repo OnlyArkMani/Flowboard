@@ -1,2 +1,10 @@
 .env
 .env.*
+backend/storage/exports/
+backend/storage/uploads/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+venv/
+.env/
