@@ -5,6 +5,8 @@ import re
 import io
 import csv
 import base64
+import math
+from collections import Counter
 from datetime import timedelta
 from typing import Optional, Tuple
 
@@ -14,6 +16,7 @@ from django.utils import timezone
 
 import pandas as pd
 from fpdf import FPDF
+from django.db.models import Q
 
 # Ensure Django app registry is loaded when this module is imported by an
 # out-of-process RQ worker (started via `rq worker` and not manage.py).
@@ -52,6 +55,7 @@ DEFAULT_KNOWN_ERRORS = [
             "root_cause": "The uploaded file has no header row or could not be parsed into columns.",
             "corrective_action": "Ensure the first row contains column names and re-export the file as a well-formed CSV or Excel file.",
             "resolution_report": "Pipeline rejected the file before validation because the schema was empty.",
+            "auto_fix": {"actions": ["promote_header"]},
         },
     },
     {
@@ -63,6 +67,7 @@ DEFAULT_KNOWN_ERRORS = [
             "root_cause": "The uploaded file is empty or only contains a header row.",
             "corrective_action": "Verify the source system is exporting data and re-upload a file with at least one data row.",
             "resolution_report": "Upload completed but zero records were available for processing.",
+            "auto_fix": {"actions": ["ensure_row"]},
         },
     },
     {
@@ -74,6 +79,7 @@ DEFAULT_KNOWN_ERRORS = [
             "root_cause": "The file schema does not match the expected template for this department.",
             "corrective_action": "Update the export to include all required columns (e.g. student_id, score) and re-upload.",
             "resolution_report": "Schema validation blocked the job until the template is fixed.",
+            "auto_fix": {"actions": ["alias_columns"]},
         },
     },
     {
@@ -85,6 +91,7 @@ DEFAULT_KNOWN_ERRORS = [
             "root_cause": "The file extension is not supported by the pipeline loader.",
             "corrective_action": "Convert the file to CSV, XLSX/XLS or a tabular PDF and try again.",
             "resolution_report": "Rejected because the parser could not infer a loader.",
+            "auto_fix": {"actions": ["convert_to_csv"]},
         },
     },
     {
@@ -130,6 +137,7 @@ DEFAULT_KNOWN_ERRORS = [
             "root_cause": "The CSV encoding differs from UTF-8.",
             "corrective_action": "Re-export the source file as UTF-8 or specify UTF-8 BOM.",
             "resolution_report": "Parser failed while decoding file contents.",
+            "auto_fix": {"actions": ["reencode_utf8"]},
         },
     },
     {
@@ -141,6 +149,7 @@ DEFAULT_KNOWN_ERRORS = [
             "root_cause": "One or more numeric fields contain values outside the permitted range.",
             "corrective_action": "Review the highlighted rows and correct the data before re-uploading.",
             "resolution_report": "Validation rejected the payload due to data quality issues.",
+            "auto_fix": {"actions": ["clip_scores"]},
         },
     },
     {
@@ -152,6 +161,7 @@ DEFAULT_KNOWN_ERRORS = [
             "root_cause": "The upload contains duplicate student IDs.",
             "corrective_action": "Deduplicate records in the source file and upload again.",
             "resolution_report": "Encountered duplicate keys while enforcing uniqueness.",
+            "auto_fix": {"actions": ["dedupe_students"]},
         },
     },
 ]
@@ -179,6 +189,78 @@ def _finish_run(run: JobRun, status: str, logs: str = "", exit_code: int = 0) ->
         run.duration_ms = int((run.finished_at - run.started_at).total_seconds() * 1000)
     run.save()
     record_job_metric(run.job.name, status, run.duration_ms or 0)
+
+
+def _sanitize_json(value):
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {str(k): _sanitize_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_sanitize_json(v) for v in value]
+    try:
+        if pd.isna(value):
+            return None
+    except Exception:
+        pass
+    try:
+        return _sanitize_json(value.item())
+    except Exception:
+        return str(value)
+
+
+def _coerce_numeric_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    numeric_hints = {
+        "score",
+        "marks",
+        "mark",
+        "total",
+        "total_marks",
+        "total_score",
+        "points",
+        "point",
+        "percent",
+        "percentage",
+        "gpa",
+    }
+    exclude_hints = {
+        "id",
+        "name",
+        "student",
+        "code",
+        "roll",
+        "admission",
+        "registration",
+        "reg",
+        "enroll",
+    }
+    converted = []
+    for col in df.columns:
+        series = df[col]
+        if pd.api.types.is_numeric_dtype(series):
+            continue
+        if not pd.api.types.is_object_dtype(series):
+            continue
+        label = _normalize_column_label(col)
+        tokens = {token for token in label.split("_") if token}
+        has_numeric_hint = bool(tokens & numeric_hints)
+        if (tokens & exclude_hints) and not has_numeric_hint:
+            continue
+        cleaned = series.astype(str).str.strip()
+        cleaned = cleaned.replace({"": None, "nan": None, "None": None})
+        cleaned = cleaned.str.replace(",", "", regex=False).str.replace("%", "", regex=False)
+        numeric = pd.to_numeric(cleaned, errors="coerce")
+        total = len(numeric)
+        if total == 0:
+            continue
+        ratio = numeric.notna().sum() / total
+        threshold = 0.3 if has_numeric_hint else 0.6
+        if ratio >= threshold and numeric.notna().sum() > 0:
+            df[col] = numeric
+            converted.append(col)
+    return df, converted
 
 
 def _ensure_default_known_errors() -> None:
@@ -283,6 +365,280 @@ def _auto_triage_incident(incident: Incident, matched: Optional[KnownError], run
     incident.save(update_fields=list(set(updates)))
 
 
+def _resolve_auto_fix_actions(matched: Optional[KnownError], error_text: str) -> list[str]:
+    actions: list[str] = []
+    if matched and isinstance(matched.fix, dict):
+        auto_fix = matched.fix.get("auto_fix")
+        if isinstance(auto_fix, dict):
+            raw = auto_fix.get("actions") or []
+            if isinstance(raw, str):
+                actions = [raw]
+            elif isinstance(raw, list):
+                actions = [str(item) for item in raw if item]
+    if matched and matched.name == "Required columns missing":
+        actions = [action for action in actions if action != "add_missing_columns"]
+    if actions:
+        return actions
+    lowered = (error_text or "").lower()
+    mapping = [
+        ("no columns detected", ["promote_header"]),
+        ("no rows detected", ["ensure_row"]),
+        ("required columns missing", ["alias_columns"]),
+        ("unsupported file type", ["convert_to_csv"]),
+        ("unicode", ["reencode_utf8"]),
+        ("codec can't decode", ["reencode_utf8"]),
+        ("duplicate rows detected", ["dedupe_students"]),
+        ("score must be between", ["clip_scores"]),
+        ("value out of range", ["clip_scores"]),
+    ]
+    for needle, mapped in mapping:
+        if needle in lowered:
+            actions.extend(mapped)
+    return actions
+
+
+def _load_dataframe_for_fix(upload: Upload, header_mode: Optional[str] = None, encoding: Optional[str] = None) -> Optional[pd.DataFrame]:
+    if not upload.file_path or not os.path.exists(upload.file_path):
+        return None
+    ext = os.path.splitext(upload.file_path)[1].lower()
+    if ext == ".csv":
+        try:
+            if header_mode == "none":
+                return pd.read_csv(upload.file_path, header=None, sep=None, engine="python", encoding=encoding)
+            return pd.read_csv(upload.file_path, encoding=encoding)
+        except Exception:
+            if header_mode == "none":
+                try:
+                    return pd.read_csv(upload.file_path, header=None, encoding=encoding)
+                except Exception:
+                    return None
+            return None
+    if ext in [".xlsx", ".xls"]:
+        try:
+            return pd.read_excel(upload.file_path, header=None if header_mode == "none" else 0)
+        except Exception:
+            return None
+    if ext == ".pdf":
+        try:
+            return _load_df(upload)
+        except Exception:
+            return None
+    return None
+
+
+def _write_fixed_dataframe(upload: Upload, df: pd.DataFrame, label: str) -> str:
+    upload_dir = os.path.dirname(upload.file_path) if upload.file_path else getattr(settings, "UPLOAD_DIR", "/app/storage/uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+    filename = f"auto-fix-{label}-{timestamp}.csv"
+    path = os.path.join(upload_dir, filename)
+    df.to_csv(path, index=False)
+    upload.file_path = path
+    upload.save(update_fields=["file_path"])
+    return path
+
+
+def _apply_alias_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    alias_map = {
+        "student_id": [
+            "student_id",
+            "studentid",
+            "student_no",
+            "student_number",
+            "student_num",
+            "student_code",
+            "student_roll",
+            "roll_no",
+            "roll_number",
+            "rollno",
+            "roll",
+            "admission_no",
+            "admission_id",
+            "admission_number",
+            "admission",
+            "registration_no",
+            "registration_id",
+            "reg_no",
+            "reg_id",
+            "enrollment_no",
+            "enrollment_id",
+            "enroll_no",
+            "enroll_id",
+            "id",
+            "id_no",
+            "id_number",
+            "unique_id",
+        ],
+        "student_name": [
+            "student_name",
+            "studentname",
+            "student_full_name",
+            "name",
+            "full_name",
+            "full_name_of_student",
+            "candidate_name",
+            "pupil_name",
+        ],
+        "score": [
+            "score",
+            "marks",
+            "mark",
+            "total_marks",
+            "total_mark",
+            "total_score",
+            "score_total",
+            "points",
+            "point",
+            "grade",
+            "percentage",
+            "percent",
+            "score_percent",
+            "score_percentage",
+            "final_score",
+            "overall_score",
+        ],
+        "class": [
+            "class",
+            "class_name",
+            "class_level",
+            "grade_level",
+            "grade",
+            "level",
+            "section",
+            "class_section",
+            "class_section_name",
+        ],
+        "subject": ["subject", "subject_name", "course", "course_name", "paper", "paper_name"],
+    }
+    normalized = {col: _normalize_column_label(col) for col in df.columns}
+    rename = {}
+    matched = []
+    for col, norm in normalized.items():
+        for target, aliases in alias_map.items():
+            if norm in aliases and target not in df.columns and target not in rename.values():
+                rename[col] = target
+                matched.append(f"{col}->{target}")
+                break
+    if rename:
+        df = df.rename(columns=rename)
+    return df, matched
+
+
+def _apply_auto_fix(upload: Upload, matched: Optional[KnownError], error_text: str) -> Optional[str]:
+    actions = _resolve_auto_fix_actions(matched, error_text)
+    if not actions:
+        return None
+
+    notes = []
+
+    if "reencode_utf8" in actions:
+        df = None
+        used = None
+        for enc in ["utf-8", "utf-8-sig", "latin-1", "cp1252"]:
+            df = _load_dataframe_for_fix(upload, encoding=enc)
+            if df is not None:
+                used = enc
+                break
+        if df is not None:
+            _write_fixed_dataframe(upload, df, "utf8")
+            notes.append(f"Re-encoded CSV using {used}")
+
+    if "convert_to_csv" in actions:
+        df = _load_dataframe_for_fix(upload)
+        if df is not None:
+            _write_fixed_dataframe(upload, df, "converted")
+            notes.append("Converted file to CSV for retry")
+
+    df_actions = {"promote_header", "alias_columns", "add_missing_columns", "ensure_row", "dedupe_students", "clip_scores"}
+    if any(action in df_actions for action in actions):
+        header_mode = "none" if "promote_header" in actions else None
+        df = _load_dataframe_for_fix(upload, header_mode=header_mode)
+        if df is None:
+            return "; ".join(notes) if notes else None
+
+        changed = False
+        if "promote_header" in actions:
+            if df.empty or df.shape[0] < 2:
+                return "; ".join(notes) if notes else None
+            header_row = [str(value).strip() for value in df.iloc[0].tolist()]
+            if not any(header_row):
+                return "; ".join(notes) if notes else None
+            df = df.iloc[1:].reset_index(drop=True)
+            df.columns = [(_normalize_column_label(label) or f"column_{idx+1}") for idx, label in enumerate(header_row)]
+            notes.append("Promoted first row to headers")
+            changed = True
+
+        if "alias_columns" in actions:
+            df.columns = [_normalize_column_label(c) for c in df.columns]
+            df, matched_aliases = _apply_alias_columns(df)
+            if matched_aliases:
+                notes.append("Aliased columns: " + ", ".join(matched_aliases))
+                changed = True
+
+        if "add_missing_columns" in actions:
+            dept = upload.department or ""
+            required = REQUIRED_COLUMNS_BY_DEPARTMENT.get(dept, REQUIRED_COLUMNS_DEFAULT)
+            missing = [c for c in required if c not in [str(col).lower() for col in df.columns]]
+            if missing:
+                for col in missing:
+                    df[col] = ""
+                notes.append("Added missing columns: " + ", ".join(missing))
+                changed = True
+
+        if "ensure_row" in actions and df.empty and df.columns.tolist():
+            df.loc[0] = ["" for _ in df.columns]
+            notes.append("Inserted placeholder row")
+            changed = True
+
+        if "dedupe_students" in actions and "student_id" in df.columns:
+            before = len(df)
+            df = df.drop_duplicates(subset=["student_id"])
+            removed = before - len(df)
+            if removed > 0:
+                notes.append(f"Removed {removed} duplicate student rows")
+                changed = True
+
+        if "clip_scores" in actions and "score" in df.columns:
+            series = pd.to_numeric(df["score"], errors="coerce")
+            df["score"] = series.clip(lower=0, upper=100)
+            notes.append("Clipped score values to 0-100")
+            changed = True
+
+        if changed:
+            _write_fixed_dataframe(upload, df, "datafix")
+
+    return "; ".join(notes) if notes else None
+
+
+def _attempt_auto_remediation(incident: Incident, matched: Optional[KnownError], run: JobRun, error_text: str) -> None:
+    if not matched:
+        return
+    if incident.assignee:
+        return
+    if incident.detection_source != "engine":
+        return
+    if incident.state == "resolved":
+        return
+    if incident.auto_retry_count >= incident.max_auto_retries:
+        _append_incident_event(
+            incident,
+            "Auto-remediation skipped",
+            notes=f"Retry limit reached ({incident.auto_retry_count}/{incident.max_auto_retries})",
+        )
+        incident.save(update_fields=["timeline", "updated_at"])
+        return
+
+    result = _apply_auto_fix(incident.upload, matched, error_text)
+    if not result:
+        return
+
+    incident.auto_retry_count += 1
+    incident.state = "in_progress"
+    _append_incident_event(incident, "Auto-remediation applied", notes=result)
+    incident.save(update_fields=["auto_retry_count", "state", "timeline", "updated_at"])
+    default_queue.enqueue(job_chain_standardize, str(incident.upload.upload_id))
+
+
 def _create_incident_and_ticket(upload: Upload, run: JobRun, error_text: str) -> Incident:
     matched = _match_known_error(error_text)
 
@@ -318,6 +674,7 @@ def _create_incident_and_ticket(upload: Upload, run: JobRun, error_text: str) ->
         ],
     )
     _auto_triage_incident(incident, matched, run)
+    _attempt_auto_remediation(incident, matched, run, error_text)
     record_incident_metric("open")
     return incident
 
@@ -469,10 +826,15 @@ def job_chain_standardize(upload_id: str) -> None:
                 if step == "standardize_results":
                     df = _load_df(upload)
                     df.columns = [_normalize_column_label(c) for c in df.columns]
+                    df, matched_aliases = _apply_alias_columns(df)
                     summary["rows"] = int(len(df))
                     summary["cols"] = int(len(df.columns))
                     summary["columns"] = df.columns.tolist()
-                    log_msg = f"Loaded {summary['rows']} rows, {summary['cols']} cols"
+                    log_pieces = [f"Loaded {summary['rows']} rows, {summary['cols']} cols"]
+                    if matched_aliases:
+                        summary["column_aliases"] = matched_aliases
+                        log_pieces.append("Aliased columns: " + ", ".join(matched_aliases))
+                    log_msg = " | ".join(log_pieces)
 
                 elif step == "validate_results":
                     if df is None:
@@ -496,16 +858,7 @@ def job_chain_standardize(upload_id: str) -> None:
                 elif step == "transform_gradebook":
                     if df is None:
                         raise RuntimeError("No dataframe loaded")
-                    for c in df.columns:
-                        series = df[c]
-                        if series.dtype == "object":
-                            series = series.astype(str).str.strip()
-                            try:
-                                df[c] = pd.to_numeric(series)
-                            except Exception:
-                                df[c] = series
-                        else:
-                            df[c] = series
+                    df, coerced_cols = _coerce_numeric_columns(df)
                     plan_df, plan_mode, plan_summary = _apply_processing_plan(df, upload)
                     df = plan_df
                     summary["processing_plan"] = {
@@ -513,7 +866,9 @@ def job_chain_standardize(upload_id: str) -> None:
                         "description": plan_summary,
                         "config": upload.process_config or {},
                     }
-                    log_pieces = ["Transformed gradebook (trim + safe numeric coercion)"]
+                    log_pieces = ["Transformed gradebook (trim + numeric coercion)"]
+                    if coerced_cols:
+                        log_pieces.append("Numeric columns: " + ", ".join(coerced_cols))
                     if plan_summary:
                         log_pieces.append(plan_summary)
                     log_msg = " | ".join(log_pieces)
@@ -584,7 +939,7 @@ def job_chain_standardize(upload_id: str) -> None:
                     pdf_titles = upload.filename or f"Upload {upload.upload_id}"
                     pdf_bytes = _build_pdf_table(pdf_titles, pdf_columns, pdf_rows or [])
                     upload.report_pdf = base64.b64encode(pdf_bytes if isinstance(pdf_bytes, bytes) else bytes(pdf_bytes)).decode("ascii")
-                    upload.report_meta = summary
+                    upload.report_meta = _sanitize_json(summary)
                     upload.save(
                         update_fields=["status", "report_path", "report_generated_at", "report_csv", "report_pdf", "report_meta"],
                     )
@@ -615,6 +970,33 @@ def job_chain_standardize(upload_id: str) -> None:
     pipeline_run.details = {"steps": step_records}
     pipeline_run.logs = "\n".join(pipeline_logs)[:20000]
     _finish_run(pipeline_run, "success", pipeline_run.logs)
+    _auto_resolve_known_incidents(upload)
+
+
+def _auto_resolve_known_incidents(upload: Upload) -> None:
+    incidents = Incident.objects.filter(
+        upload=upload,
+        matched_known_error__isnull=False,
+        state__in=["open", "in_progress"],
+    ).filter(Q(assignee__isnull=True) | Q(assignee=""))
+    if not incidents.exists():
+        return
+    for incident in incidents:
+        incident.state = "resolved"
+        incident.resolved_by = "engine"
+        incident.resolution_report = incident.resolution_report or "Auto-resolved after successful remediation."
+        incident.resolved_at = timezone.now()
+        _append_incident_event(
+            incident,
+            "Incident auto-resolved",
+            actor="engine",
+            notes="Pipeline completed successfully after auto-remediation.",
+        )
+        incident.save(
+            update_fields=["state", "resolved_by", "resolved_at", "resolution_report", "timeline", "updated_at"],
+        )
+        for ticket in incident.tickets.filter(status__in=["open", "in_progress"]):
+            ticket.resolve(resolved_by="engine", resolution_type="automatic", notes="Auto-resolved with incident")
 def _apply_processing_plan(df: pd.DataFrame, upload: Upload) -> Tuple[pd.DataFrame, str, str]:
     mode = (upload.process_mode or "transform_gradebook").strip() or "transform_gradebook"
     normalized = mode.lower()
@@ -702,8 +1084,46 @@ def _build_pdf_table(title: str, columns: list[str], rows: list[list[str]]) -> b
 
     return bytes(pdf.output(dest="S"))
 def _finalize_pdf_dataframe(header: list[str], rows: list[list[str]], text_blob: str) -> pd.DataFrame:
-    expected = len(header)
+    header_row = list(header or [])
     normalized_rows = [list(row) for row in rows or []]
+
+    header_score = _score_header_row(header_row)
+    header_hits = _header_keyword_hits(header_row)
+    best_idx = None
+    best_score = header_score
+    for idx, row in enumerate(normalized_rows[:5]):
+        score = _score_header_row(row)
+        if score > best_score:
+            best_score = score
+            best_idx = idx
+
+    if best_idx is not None and best_score >= max(2, header_score + 2):
+        header_row = normalized_rows[best_idx]
+        header_score = best_score
+        header_hits = _header_keyword_hits(header_row)
+        normalized_rows = normalized_rows[best_idx + 1 :]
+
+    expected_mode = _most_common_row_length(normalized_rows, len(header_row))
+    header_len = len(header_row)
+    header_confident = header_hits >= 2 or header_score >= 2
+
+    if header_len and header_confident:
+        if expected_mode >= header_len and expected_mode - header_len <= 2:
+            expected = header_len
+        else:
+            expected = expected_mode or header_len
+    else:
+        expected = expected_mode or header_len
+
+    if expected <= 0 and normalized_rows:
+        expected = max(len(row) for row in normalized_rows)
+    if expected <= 0:
+        expected = max(1, header_len)
+
+    if len(header_row) != expected:
+        header_row = _align_row_tokens(header_row, expected)
+    header_row = [label or f"column_{idx+1}" for idx, label in enumerate(header_row)]
+
     needs_alignment = expected > 0 and any(len(row) != expected for row in normalized_rows if row)
     if needs_alignment:
         fwf_candidate = _try_fixed_width_table(text_blob, expected)
@@ -712,7 +1132,120 @@ def _finalize_pdf_dataframe(header: list[str], rows: list[list[str]], text_blob:
         normalized_rows = [_align_row_tokens(row, expected) for row in normalized_rows]
     else:
         normalized_rows = [row if len(row) == expected else _align_row_tokens(row, expected) for row in normalized_rows]
-    return pd.DataFrame(normalized_rows, columns=header)
+    df = pd.DataFrame(normalized_rows, columns=header_row)
+    df = _trim_empty_auto_columns(df)
+    return df
+
+
+def _most_common_row_length(rows: list[list[str]], fallback: int) -> int:
+    lengths = [len(row) for row in rows if row]
+    if not lengths:
+        return fallback
+    counts = Counter(lengths)
+    return counts.most_common(1)[0][0]
+
+
+def _score_header_row(row: list[str]) -> int:
+    if not row:
+        return 0
+    keywords = {
+        "student",
+        "id",
+        "roll",
+        "admission",
+        "reg",
+        "enroll",
+        "name",
+        "score",
+        "marks",
+        "mark",
+        "grade",
+        "percent",
+        "percentage",
+        "subject",
+        "class",
+        "section",
+        "course",
+        "paper",
+        "result",
+        "results",
+    }
+    alpha = 0
+    numeric = 0
+    tokens: list[str] = []
+    for cell in row:
+        text = str(cell or "").strip()
+        if not text:
+            continue
+        if any(ch.isalpha() for ch in text):
+            alpha += 1
+        if _looks_numeric(text):
+            numeric += 1
+        normalized = _normalize_column_label(text)
+        if normalized:
+            tokens.extend(normalized.split("_"))
+    keyword_hits = 0
+    for token in tokens:
+        if token in keywords:
+            keyword_hits += 1
+            continue
+        if any(key in token for key in keywords):
+            keyword_hits += 1
+    return (keyword_hits * 3) + alpha - (numeric * 2)
+
+
+def _header_keyword_hits(row: list[str]) -> int:
+    if not row:
+        return 0
+    keywords = {
+        "student",
+        "id",
+        "roll",
+        "admission",
+        "reg",
+        "enroll",
+        "name",
+        "score",
+        "marks",
+        "mark",
+        "grade",
+        "percent",
+        "percentage",
+        "subject",
+        "class",
+        "section",
+        "course",
+        "paper",
+    }
+    hits = 0
+    for cell in row:
+        normalized = _normalize_column_label(cell)
+        if not normalized:
+            continue
+        for key in keywords:
+            if key in normalized:
+                hits += 1
+                break
+    return hits
+
+
+def _trim_empty_auto_columns(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+    drop_cols = []
+    total = len(df)
+    if total == 0:
+        return df
+    for col in df.columns:
+        name = str(col)
+        if not name.startswith("column_"):
+            continue
+        non_empty = df[col].astype(str).str.strip().replace({"nan": ""}).ne("").sum()
+        if non_empty / total < 0.15:
+            drop_cols.append(col)
+    if drop_cols:
+        df = df.drop(columns=drop_cols)
+    return df
 
 
 def _try_fixed_width_table(text_blob: str, expected_cols: int) -> Optional[pd.DataFrame]:
