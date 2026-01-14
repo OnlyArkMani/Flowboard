@@ -1,0 +1,23 @@
+field,value
+upload_id,06c934f4-1e7a-4549-8dd8-be491696f145
+department,Fees
+filename,fee-ingest-20251228-0741.csv
+rows,4
+cols,7
+columns,"student_id, student_name, class, score, attendance_percent, status, recorded_at"
+score.count,4.0
+score.mean,89.5
+score.std,3.4117444218464006
+score.min,85.6
+score.25%,87.4
+score.50%,89.5
+score.75%,91.6
+score.max,93.4
+attendance_percent.count,4.0
+attendance_percent.mean,91.425
+attendance_percent.std,2.2186707732333804
+attendance_percent.min,89.0
+attendance_percent.25%,90.125
+attendance_percent.50%,91.25
+attendance_percent.75%,92.55
+attendance_percent.max,94.2
