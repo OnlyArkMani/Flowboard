@@ -1,0 +1,23 @@
+field,value
+upload_id,d5ce2543-0370-448a-b73d-d0c2a348eb46
+department,Examination
+filename,exm-ingest-20251225-1138.csv
+rows,4
+cols,7
+columns,"student_id, student_name, class, score, attendance_percent, status, recorded_at"
+score.count,4.0
+score.mean,80.8
+score.std,9.845134161943486
+score.min,69.0
+score.25%,75.375
+score.50%,81.1
+score.75%,86.525
+score.max,92.0
+attendance_percent.count,4.0
+attendance_percent.mean,91.625
+attendance_percent.std,3.449033681095813
+attendance_percent.min,88.0
+attendance_percent.25%,89.5
+attendance_percent.50%,91.25
+attendance_percent.75%,93.375
+attendance_percent.max,96.0
