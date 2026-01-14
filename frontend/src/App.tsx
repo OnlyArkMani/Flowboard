@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
-import { apiClient } from "./lib/api"
+import { apiClient, setApiToken } from "./lib/api"
 import "./app.css"
 
 type NavKey = "dashboard" | "uploads" | "jobRuns" | "incidents" | "reports" | "jobs"
@@ -368,6 +368,12 @@ const INDIAN_DATE_FORMATTER = new Intl.DateTimeFormat(INDIAN_LOCALE, {
   second: "2-digit",
 })
 const IST_OFFSET_MINUTES = 330
+const IST_DATE_PARTS_FORMATTER = new Intl.DateTimeFormat(INDIAN_LOCALE, {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+})
 
 function parseDateInput(input?: string): Date | null {
   if (!input) return null
@@ -384,6 +390,26 @@ function parseDateInput(input?: string): Date | null {
   if (!Number.isNaN(parsed.getTime())) return parsed
   const fallback = new Date(input)
   return Number.isNaN(fallback.getTime()) ? null : fallback
+}
+
+function getISTDateKeyFromDate(date: Date) {
+  const parts = IST_DATE_PARTS_FORMATTER.formatToParts(date)
+  let year = ""
+  let month = ""
+  let day = ""
+  for (const part of parts) {
+    if (part.type === "year") year = part.value
+    if (part.type === "month") month = part.value
+    if (part.type === "day") day = part.value
+  }
+  if (!year || !month || !day) return null
+  return `${year}-${month}-${day}`
+}
+
+function getISTDateKey(input?: string) {
+  const parsed = parseDateInput(input)
+  if (!parsed || Number.isNaN(parsed.getTime())) return null
+  return getISTDateKeyFromDate(parsed)
 }
 
 function convertToIST(date: Date) {
@@ -796,18 +822,11 @@ function DashboardPage() {
         const runs = unwrapList<any>(runsRes)
         const jobs = unwrapList<any>(jobsRes)
 
-        const now = convertToIST(new Date())
-        const todayKey = {
-          year: now.getFullYear(),
-          month: now.getMonth() + 1,
-          day: now.getDate(),
-        }
+        const todayKey = getISTDateKeyFromDate(new Date())
         const isToday = (value?: string) => {
-          const parts = getLocalDateParts(value)
-          if (!parts) return false
-          return parts.year === todayKey.year && parts.month === todayKey.month && parts.day === todayKey.day
+          const key = getISTDateKey(value)
+          return Boolean(key && todayKey && key === todayKey)
         }
-
         setTodayUploads(uploads.filter((u) => isToday(u.received_at)).length)
         setFailedRecent(uploads.filter((u) => u.status === "failed" && isWithinDays(u.received_at, 7)).length)
         setOpenIncidents(incidents.filter((r) => r.state === "open" || r.state === "in_progress").length)
@@ -2343,7 +2362,16 @@ function IncidentsPage() {
       alert("Missing issue ID.")
       return
     }
-    const assignee = prompt("Assign to (name):")
+    let assignee = ""
+    if (auth.role === "admin") {
+      assignee = prompt("Assign to (moderator username):") || ""
+    } else {
+      assignee = auth.user?.username || ""
+      if (!assignee) {
+        alert("Sign in again so we can claim this issue.")
+        return
+      }
+    }
     if (!assignee) return
     try {
       setActionBusy(incidentId)
@@ -2634,6 +2662,14 @@ function IncidentsPage() {
               visibleIncidents.map((r) => {
                 const incidentKey = r.incident_id ?? r.id ?? Math.random()
                 const incidentId = r.incident_id ?? r.id
+                const assignee = r.assignee ? String(r.assignee) : ""
+                const isAssignedToOther = assignee && assignee !== auth.user?.username
+                const assignLabel = auth.role === "admin" ? "Assign" : "Claim"
+                const assignDisabled =
+                  actionBusy === incidentId ||
+                  r.state === "resolved" ||
+                  !auth.canManageIncidents ||
+                  (auth.role === "moderator" && isAssignedToOther)
                 return (
                   <div className="tRow" key={incidentKey} onClick={() => openIncidentDetail(r)}>
                     <div className="mono">{String(r.incident_id ?? "—").slice(0, 8)}</div>
@@ -2648,33 +2684,39 @@ function IncidentsPage() {
                     <div>{fmtDate(r.created_at)}</div>
                     <div className="mono">{r.upload?.upload_id ? String(r.upload.upload_id).slice(0, 8) : "—"}</div>
                     <div title={String(r.error ?? "")}>{clampText(r.error, 60) || "—"}</div>
-                <div>{r.assignee ?? "—"}</div>
-                <div>{r.is_known ? "Known" : "Unknown"}</div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    className="ghostBtn"
-                    type="button"
-                    disabled={actionBusy === incidentId || !auth.canManageIncidents}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      assignIncident(incidentId ? String(incidentId) : undefined)
-                    }}
-                    title={auth.canManageIncidents ? "" : "Moderators and admins can assign issues."}
-                  >
-                    Assign
-                  </button>
-                  <button
-                    className="ghostBtn"
-                    type="button"
-                    disabled={actionBusy === incidentId || r.state === "resolved" || !auth.canManageIncidents}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      resolveIncident(incidentId ? String(incidentId) : undefined)
-                    }}
-                    title={auth.canManageIncidents ? "" : "Moderators and admins can resolve issues."}
-                  >
-                    Resolve
-                  </button>
+                    <div>{assignee || "Unassigned"}</div>
+                    <div>{r.is_known ? "Known" : "Unknown"}</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="ghostBtn"
+                        type="button"
+                        disabled={assignDisabled}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          assignIncident(incidentId ? String(incidentId) : undefined)
+                        }}
+                        title={
+                          !auth.canManageIncidents
+                            ? "Moderators and admins can assign issues."
+                            : auth.role === "moderator" && isAssignedToOther
+                            ? "Already assigned to another moderator."
+                            : ""
+                        }
+                      >
+                        {assignLabel}
+                      </button>
+                      <button
+                        className="ghostBtn"
+                        type="button"
+                        disabled={actionBusy === incidentId || r.state === "resolved" || !auth.canManageIncidents}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          resolveIncident(incidentId ? String(incidentId) : undefined)
+                        }}
+                        title={auth.canManageIncidents ? "" : "Moderators and admins can resolve issues."}
+                      >
+                        Resolve
+                      </button>
                     </div>
                   </div>
                 )
@@ -3671,6 +3713,7 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [authUsername, setAuthUsername] = useState("")
   const [authPassword, setAuthPassword] = useState("")
+  const [showAuthPassword, setShowAuthPassword] = useState(false)
   const [showReset, setShowReset] = useState(false)
   const [resetStep, setResetStep] = useState<"request" | "verify" | "done">("request")
   const [resetUsername, setResetUsername] = useState("")
@@ -3708,6 +3751,7 @@ export default function App() {
         setAuthLoading(false)
         return
       }
+      setApiToken(token)
       try {
         const res = await fetch(`${baseURL()}/api/auth/me`, {
           headers: { Authorization: `Token ${token}` },
@@ -3723,6 +3767,7 @@ export default function App() {
         } catch {
           // ignore
         }
+        setApiToken(null)
         setAuthUser(null)
       } finally {
         if (!mounted) return
@@ -3807,6 +3852,7 @@ export default function App() {
       }
       if (data?.token) {
         localStorage.setItem("jwt_token", data.token)
+        setApiToken(data.token)
       }
       setAuthUser(data.user ?? null)
       setAuthPassword("")
@@ -3834,6 +3880,7 @@ export default function App() {
       } catch {
         // ignore
       }
+      setApiToken(null)
       setAuthUser(null)
       setActive("dashboard")
     }
@@ -4213,7 +4260,7 @@ export default function App() {
                 <>
                   <div className="authCardHeader">
                     <div className="authTitle">Sign in</div>
-                    <div className="authSubtitle">Use your account to open your workspace.</div>
+                    <div className="authSubtitle">Use your account to open your workspace; sign in with your role.</div>
                   </div>
                   {authError ? <div className="errorLine">{authError}</div> : null}
                   <div className="field">
@@ -4227,13 +4274,22 @@ export default function App() {
                   </div>
                   <div className="field">
                     <label className="label">Password</label>
-                    <input
-                      className="input"
-                      type="password"
-                      value={authPassword}
-                      onChange={(e) => setAuthPassword(e.target.value)}
-                      placeholder="••••••••"
-                    />
+                    <div className="inputWithAction">
+                      <input
+                        className="input"
+                        type={showAuthPassword ? "text" : "password"}
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        className="ghostBtn ghostBtnSmall"
+                        type="button"
+                        onClick={() => setShowAuthPassword((v) => !v)}
+                      >
+                        {showAuthPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
                   </div>
                   <button className="primaryBtn authSubmit" type="button" disabled={authBusy} onClick={handleLogin}>
                     {authBusy ? "Signing in..." : "Sign in"}
