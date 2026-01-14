@@ -791,6 +791,14 @@ body{
   color:#1d4ed8;
   text-decoration:underline;
 }
+.inputWithAction{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.inputWithAction .input{
+  flex:1;
+}
 .authFootnote{
   color:#94a3b8;
   font-size:12px;
