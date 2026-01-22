@@ -1,0 +1,7 @@
+field,value
+upload_id,6f598648-ab58-49d1-9d8a-fcd552cc59aa
+department,Examination
+filename,sample_school_results.pdf
+rows,53
+cols,7
+columns,"student_id, student_name, class, subject, score, max, column_7"

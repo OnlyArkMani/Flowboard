@@ -1,0 +1,15 @@
+field,value
+upload_id,2b74498e-9109-45f2-b1f2-fc0ed6fc1b7a
+department,Examination
+filename,school_results_updated.csv
+rows,4
+cols,5
+columns,"student_id, student_name, class, subject, score"
+score.count,4.0
+score.mean,84.25
+score.std,7.135591542869215
+score.min,76.0
+score.25%,79.75
+score.50%,84.5
+score.75%,89.0
+score.max,92.0

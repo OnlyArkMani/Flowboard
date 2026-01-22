@@ -1,0 +1,5 @@
+student_id,student_name,class,score,attendance_percent,status,recorded_at
+EXM401,Kiran Rao,10-A,92.00,96.00,pass,2025-12-24T07:16:02.386729
+EXM402,Sameer Khan,10-B,77.50,90.00,pass,2025-12-24T07:16:02.386729
+EXM403,Anita Roy,9-A,69.00,88.00,review,2025-12-24T07:16:02.386729
+EXM404,Ritika Jain,9-B,84.70,92.50,pass,2025-12-24T07:16:02.386729

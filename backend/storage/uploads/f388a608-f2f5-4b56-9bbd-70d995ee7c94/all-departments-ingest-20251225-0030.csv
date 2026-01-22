@@ -1,0 +1,25 @@
+department,student_id,student_name,class,score,attendance_percent,status,recorded_at
+Admissions,ADM001,Aarav Sharma,10-A,86.50,98.00,verified,2025-12-24T07:16:02.386729
+Admissions,ADM002,Neha Patel,10-B,82.00,96.50,verified,2025-12-24T07:16:02.386729
+Admissions,ADM003,Kabir Singh,9-A,79.20,94.00,pending,2025-12-24T07:16:02.386729
+Admissions,ADM004,Isha Rao,9-B,88.10,97.00,verified,2025-12-24T07:16:02.386729
+Attendance,ATT101,Priya Nair,8-A,90.00,93.20,present,2025-12-24T07:16:02.386729
+Attendance,ATT102,Arjun Das,8-B,84.00,88.90,present,2025-12-24T07:16:02.386729
+Attendance,ATT103,Rohan Mehta,7-A,76.00,91.00,absent,2025-12-24T07:16:02.386729
+Attendance,ATT104,Sara Ali,7-B,89.50,95.40,present,2025-12-24T07:16:02.386729
+Examination,EXM401,Kiran Rao,10-A,92.00,96.00,pass,2025-12-24T07:16:02.386729
+Examination,EXM402,Sameer Khan,10-B,77.50,90.00,pass,2025-12-24T07:16:02.386729
+Examination,EXM403,Anita Roy,9-A,69.00,88.00,review,2025-12-24T07:16:02.386729
+Examination,EXM404,Ritika Jain,9-B,84.70,92.50,pass,2025-12-24T07:16:02.386729
+Fees,FEE201,Vikram Joshi,11-A,91.00,92.00,paid,2025-12-24T07:16:02.386729
+Fees,FEE202,Meera Kapoor,11-B,88.00,90.50,partial,2025-12-24T07:16:02.386729
+Fees,FEE203,Dev Shah,12-A,93.40,94.20,paid,2025-12-24T07:16:02.386729
+Fees,FEE204,Anaya Gupta,12-B,85.60,89.00,pending,2025-12-24T07:16:02.386729
+Library,LIB301,Ishaan Verma,6-A,78.00,87.50,overdue,2025-12-24T07:16:02.386729
+Library,LIB302,Nisha Kumar,6-B,80.50,90.00,returned,2025-12-24T07:16:02.386729
+Library,LIB303,Ravi Menon,5-A,74.20,85.00,returned,2025-12-24T07:16:02.386729
+Library,LIB304,Tara Bose,5-B,81.00,88.00,overdue,2025-12-24T07:16:02.386729
+Science,SCI501,Om Prakash,11-A,86.00,94.00,lab-ok,2025-12-24T07:16:02.386729
+Science,SCI502,Diya Sen,11-B,91.50,97.00,lab-ok,2025-12-24T07:16:02.386729
+Science,SCI503,Yash Arora,12-A,88.20,93.00,lab-ok,2025-12-24T07:16:02.386729
+Science,SCI504,Pooja Iyer,12-B,79.80,90.00,lab-review,2025-12-24T07:16:02.386729

@@ -1,0 +1,23 @@
+field,value
+upload_id,aee01d0e-d098-46c3-a2cc-289ce5ae7888
+department,Examination
+filename,sample_school_results.pdf
+rows,53
+cols,7
+columns,"student_id, student_name, class, subject, score, max, column_7"
+max.count,50.0
+max.mean,75.88
+max.std,9.960411433187254
+max.min,54.0
+max.25%,69.0
+max.50%,76.0
+max.75%,82.75
+max.max,100.0
+column_7.count,50.0
+column_7.mean,100.0
+column_7.std,0.0
+column_7.min,100.0
+column_7.25%,100.0
+column_7.50%,100.0
+column_7.75%,100.0
+column_7.max,100.0

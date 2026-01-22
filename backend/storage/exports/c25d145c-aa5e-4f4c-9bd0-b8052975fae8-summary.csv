@@ -1,0 +1,23 @@
+field,value
+upload_id,c25d145c-aa5e-4f4c-9bd0-b8052975fae8
+department,Science
+filename,sci-ingest-20260102-0426.csv
+rows,4
+cols,7
+columns,"student_id, student_name, class, score, attendance_percent, status, recorded_at"
+score.count,4.0
+score.mean,86.375
+score.std,4.931784666832081
+score.min,79.8
+score.25%,84.45
+score.50%,87.1
+score.75%,89.025
+score.max,91.5
+attendance_percent.count,4.0
+attendance_percent.mean,93.5
+attendance_percent.std,2.886751345948129
+attendance_percent.min,90.0
+attendance_percent.25%,92.25
+attendance_percent.50%,93.5
+attendance_percent.75%,94.75
+attendance_percent.max,97.0

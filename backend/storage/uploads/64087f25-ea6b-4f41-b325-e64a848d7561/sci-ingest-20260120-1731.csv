@@ -1,0 +1,5 @@
+student_id,student_name,class,score,attendance_percent,status,recorded_at
+SCI501,Om Prakash,11-A,86.00,94.00,lab-ok,2025-12-24T13:16:02.386729+00:00
+SCI502,Diya Sen,11-B,91.50,97.00,lab-ok,2025-12-24T13:16:02.386729+00:00
+SCI503,Yash Arora,12-A,88.20,93.00,lab-ok,2025-12-24T13:16:02.386729+00:00
+SCI504,Pooja Iyer,12-B,79.80,90.00,lab-review,2025-12-24T13:16:02.386729+00:00

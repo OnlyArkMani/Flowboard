@@ -1,0 +1,835 @@
+import csv
+import io
+import os
+import json
+import logging
+import base64
+import random
+from datetime import datetime, timedelta
+
+import pandas as pd
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.core.mail import send_mail
+from django.db import connection
+from django.db.models import Q
+from django.http import HttpResponse
+from django.utils import timezone
+
+from rq import Worker
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.authtoken.models import Token
+
+from .models import Upload, JobRun, Incident, Ticket, Job, User, PasswordResetRequest, EmailVerificationRequest
+from .serializers import UploadSerializer, JobRunSerializer, IncidentSerializer, TicketSerializer, JobSerializer
+from .permissions import UploadPermissions, JobRunPermissions, JobPermissions, IncidentPermissions, TicketPermissions
+from .workers import (
+    job_chain_standardize,
+    _load_df,
+    _append_incident_event,
+    _apply_processing_plan,
+    _apply_alias_columns,
+    _coerce_numeric_columns,
+    _normalize_column_label,
+    _build_pdf_table,
+    _sanitize_json,
+)
+from .metrics import get_metrics_data
+from .queues import default_queue, redis_conn
+from .scheduler import enqueue_job_now
+
+logger = logging.getLogger(__name__)
+
+
+def regenerate_report(upload: Upload) -> str | None:
+    """
+    Best-effort regeneration of the processed CSV if the pipeline file was removed.
+    """
+    try:
+        df = _load_df(upload)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Failed to reload upload %s for report regen: %s", upload.upload_id, exc)
+        return None
+
+    df.columns = [_normalize_column_label(c) for c in df.columns]
+    df, matched_aliases = _apply_alias_columns(df)
+    df, _ = _coerce_numeric_columns(df)
+    summary_rows = [
+        ["upload_id", str(upload.upload_id)],
+        ["department", upload.department],
+        ["filename", upload.filename],
+        ["rows", len(df)],
+        ["cols", len(df.columns)],
+        ["columns", ", ".join(df.columns.tolist())],
+    ]
+    summary = {
+        "rows": len(df),
+        "cols": len(df.columns),
+        "columns": df.columns.tolist(),
+        "summary_rows": list(summary_rows),
+    }
+    if matched_aliases:
+        summary["column_aliases"] = matched_aliases
+
+    numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+    summary["numeric_cols"] = numeric_cols
+    if numeric_cols:
+        desc = df[numeric_cols].describe()
+        summary["describe"] = desc.to_dict()
+        for col in numeric_cols:
+            stats = desc[col].to_dict()
+            for stat_name, value in stats.items():
+                summary_rows.append([f"{col}.{stat_name}", value])
+    summary["summary_rows"] = summary_rows
+
+    df, _ = _coerce_numeric_columns(df)
+
+    mode = (upload.process_mode or "transform_gradebook").strip().lower()
+    export_dir = getattr(settings, "EXPORT_DIR", "/app/storage/exports")
+    os.makedirs(export_dir, exist_ok=True)
+
+    if mode == "transform_gradebook":
+        export_path = os.path.join(export_dir, f"{upload.upload_id}-summary.csv")
+        df_rows = pd.DataFrame(summary_rows, columns=["field", "value"])
+        df_rows.to_csv(export_path, index=False)
+        csv_buf = io.StringIO()
+        df_rows.to_csv(csv_buf, index=False)
+        pdf_columns = ["field", "value"]
+        pdf_rows = summary_rows
+    else:
+        plan_df, plan_mode, plan_summary = _apply_processing_plan(df, upload)
+        df = plan_df
+        summary["processing_plan"] = {
+            "mode": plan_mode,
+            "description": plan_summary,
+            "config": upload.process_config or {},
+        }
+        export_path = os.path.join(export_dir, f"{upload.upload_id}-processed.csv")
+        df.to_csv(export_path, index=False)
+        csv_buf = io.StringIO()
+        df.to_csv(csv_buf, index=False)
+        pdf_columns = list(df.columns)
+        pdf_rows = df.astype(str).values.tolist()
+
+    upload.report_path = export_path
+    upload.report_generated_at = timezone.now()
+    upload.report_csv = csv_buf.getvalue()
+    upload.report_meta = _sanitize_json(summary)
+    pdf_bytes = _build_pdf_table(f"Upload {upload.upload_id}", pdf_columns, pdf_rows or [])
+    upload.report_pdf = base64.b64encode(pdf_bytes).decode("ascii")
+    upload.save(update_fields=["report_path", "report_generated_at", "report_csv", "report_pdf", "report_meta"])
+    return export_path
+
+
+class UploadViewSet(viewsets.ModelViewSet):
+    queryset = Upload.objects.all()
+    serializer_class = UploadSerializer
+    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [UploadPermissions]
+    lookup_field = "upload_id"
+
+    def get_queryset(self):
+        qs = Upload.objects.all()
+        status_q = self.request.query_params.get("status")
+        department = self.request.query_params.get("department")
+        if status_q:
+            qs = qs.filter(status=status_q)
+        if department:
+            qs = qs.filter(department=department)
+        return qs
+
+    def create(self, request, *args, **kwargs):
+        f = request.FILES.get("file")
+        department = request.data.get("department", "General")
+        notes = request.data.get("notes", "")
+        process_mode = request.data.get("process_mode") or "transform_gradebook"
+        raw_config = request.data.get("process_config")
+        process_config = {}
+        if isinstance(raw_config, (str, bytes)):
+            try:
+                process_config = json.loads(raw_config)
+            except json.JSONDecodeError:
+                process_config = {}
+        elif isinstance(raw_config, dict):
+            process_config = raw_config
+
+        if not f:
+            return Response({"error": "file is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        upload = Upload.objects.create(
+            department=department,
+            filename=f.name,
+            mime_type=f.content_type or "",
+            notes=notes,
+            status="processing",
+            process_mode=process_mode,
+            process_config=process_config,
+        )
+
+        upload_dir = getattr(settings, "UPLOAD_DIR", "/app/storage/uploads")
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # per-upload folder
+        target_dir = os.path.join(upload_dir, str(upload.upload_id))
+        os.makedirs(target_dir, exist_ok=True)
+
+        file_path = os.path.join(target_dir, f.name)
+        with open(file_path, "wb+") as dest:
+            for chunk in f.chunks():
+                dest.write(chunk)
+
+        upload.file_path = file_path
+        upload.save(update_fields=["file_path"])
+
+        default_queue.enqueue(job_chain_standardize, str(upload.upload_id))
+        return Response(UploadSerializer(upload).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"])
+    def retry(self, request, upload_id=None):
+        upload = self.get_object()
+        upload.status = "processing"
+        upload.save(update_fields=["status"])
+        default_queue.enqueue(job_chain_standardize, str(upload.upload_id))
+        return Response({"status": "requeued", "upload_id": str(upload.upload_id)})
+
+    @action(detail=True, methods=["get"])
+    def source(self, request, upload_id=None):
+        upload = self.get_object()
+        path = upload.file_path
+        if not path or not os.path.exists(path):
+            return Response({"error": "Source file not found"}, status=status.HTTP_404_NOT_FOUND)
+        filename = upload.filename or os.path.basename(path)
+        try:
+            with open(path, "rb") as handle:
+                data = handle.read()
+        except OSError:
+            return Response({"error": "Unable to read source file"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        resp = HttpResponse(data, content_type=upload.mime_type or "application/octet-stream")
+        resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return resp
+
+
+class JobRunViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = JobRun.objects.all()
+    serializer_class = JobRunSerializer
+    permission_classes = [JobRunPermissions]
+    lookup_field = "run_id"
+
+    def get_queryset(self):
+        qs = JobRun.objects.select_related("job", "upload")
+        upload_id = self.request.query_params.get("upload_id")
+        status_q = self.request.query_params.get("status")
+        if upload_id:
+            qs = qs.filter(upload__upload_id=upload_id)
+        if status_q:
+            qs = qs.filter(status=status_q)
+        return qs
+
+
+class JobViewSet(viewsets.ModelViewSet):
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    permission_classes = [JobPermissions]
+
+    @action(detail=True, methods=["post"])
+    def trigger(self, request, pk=None):
+        job = self.get_object()
+        payload = request.data if isinstance(request.data, dict) else {}
+        enqueue_job_now(job, payload or None)
+        return Response({"status": "queued", "job_id": job.id})
+
+
+class IncidentViewSet(viewsets.ModelViewSet):
+    queryset = Incident.objects.all()
+    serializer_class = IncidentSerializer
+    permission_classes = [IncidentPermissions]
+    lookup_field = "incident_id"
+
+    def get_queryset(self):
+        qs = Incident.objects.select_related("upload", "job_run", "matched_known_error")
+        state = self.request.query_params.get("state")
+        upload_id = self.request.query_params.get("upload_id")
+        job_run_id = self.request.query_params.get("job_run")
+        known = self.request.query_params.get("known")  # "true"/"false"
+        if state:
+            qs = qs.filter(state=state)
+        if upload_id:
+            qs = qs.filter(upload__upload_id=upload_id)
+        if job_run_id:
+            qs = qs.filter(job_run__run_id=job_run_id)
+        if known == "true":
+            qs = qs.filter(matched_known_error__isnull=False)
+        if known == "false":
+            qs = qs.filter(matched_known_error__isnull=True)
+        return qs
+
+    @action(detail=True, methods=["patch", "post"])
+    def assign(self, request, incident_id=None):
+        incident = self.get_object()
+        assignee = (request.data.get("assignee") or "").strip()
+        actor = request.user.username or "engine"
+
+        if request.user.is_admin():
+            if not assignee:
+                return Response({"error": "assignee required"}, status=status.HTTP_400_BAD_REQUEST)
+            target = User.objects.filter(username__iexact=assignee).first()
+            if not target or not target.is_moderator():
+                return Response({"error": "assignee must be a moderator"}, status=status.HTTP_400_BAD_REQUEST)
+            incident.assignee = target.username
+        else:
+            if incident.assignee and incident.assignee != request.user.username:
+                return Response({"error": "incident already assigned"}, status=status.HTTP_403_FORBIDDEN)
+            incident.assignee = request.user.username
+        incident.state = "in_progress"
+        _append_incident_event(
+            incident,
+            f"Assigned to {incident.assignee or 'unassigned'}",
+            actor=actor,
+            notes=request.data.get("notes"),
+        )
+        incident.save(update_fields=["assignee", "state", "updated_at", "timeline"])
+        return Response(IncidentSerializer(incident).data)
+
+    @action(detail=True, methods=["patch", "post"])
+    def resolve(self, request, incident_id=None):
+        incident = self.get_object()
+        resolved_by = request.data.get("resolved_by") or "engine"
+        incident.root_cause = request.data.get("root_cause")
+        incident.corrective_action = request.data.get("corrective_action")
+        incident.resolution_report = request.data.get("resolution_report") or incident.resolution_report
+        incident.state = "resolved"
+        incident.resolved_by = resolved_by
+        incident.resolved_at = timezone.now()
+        _append_incident_event(
+            incident,
+            "Incident resolved",
+            actor=resolved_by,
+            notes=incident.resolution_report or request.data.get("notes"),
+        )
+        incident.save(
+            update_fields=[
+                "root_cause",
+                "corrective_action",
+                "state",
+                "updated_at",
+                "resolved_at",
+                "resolution_report",
+                "resolved_by",
+                "timeline",
+            ]
+        )
+
+        # auto-resolve tickets under this incident
+        resolution_notes = incident.corrective_action or "Incident resolved"
+        for ticket in incident.tickets.filter(status__in=["open", "in_progress"]):
+            ticket.resolve(resolved_by="engine", resolution_type="automatic", notes=resolution_notes)
+
+        return Response(IncidentSerializer(incident).data)
+
+    @action(detail=True, methods=["patch", "post"])
+    def analyze(self, request, incident_id=None):
+        incident = self.get_object()
+        incident.analysis_notes = request.data.get("analysis_notes") or incident.analysis_notes
+        incident.impact_summary = request.data.get("impact_summary") or incident.impact_summary
+        incident.severity = request.data.get("severity") or incident.severity
+        incident.category = request.data.get("category") or incident.category
+        incident.detection_source = request.data.get("detection_source") or incident.detection_source
+        incident.root_cause = request.data.get("root_cause") or incident.root_cause
+        incident.corrective_action = request.data.get("corrective_action") or incident.corrective_action
+        incident.resolution_report = request.data.get("resolution_report") or incident.resolution_report
+        actor = request.data.get("actor") or "engine"
+        stage = request.data.get("rca_stage")
+        event = "RCA updated" if stage else "Analysis updated"
+        notes = request.data.get("notes")
+        if not notes:
+            if stage:
+                notes = f"Stage set to {stage}"
+            else:
+                notes = request.data.get("analysis_notes") or "Analysis details updated"
+        _append_incident_event(
+            incident,
+            event,
+            actor=actor,
+            notes=notes,
+        )
+        incident.save(
+            update_fields=[
+                "analysis_notes",
+                "impact_summary",
+                "severity",
+                "category",
+                "detection_source",
+                "root_cause",
+                "corrective_action",
+                "resolution_report",
+                "timeline",
+                "updated_at",
+            ]
+        )
+        return Response(IncidentSerializer(incident).data)
+
+    @action(detail=True, methods=["post"])
+    def retry(self, request, incident_id=None):
+        incident = self.get_object()
+        default_queue.enqueue(job_chain_standardize, str(incident.upload.upload_id))
+        incident.state = "in_progress"
+        incident.auto_retry_count = incident.auto_retry_count + 1
+        _append_incident_event(
+            incident,
+            "Manual retry requested",
+            actor=request.data.get("actor") or "engine",
+            notes=request.data.get("notes"),
+        )
+        incident.save(update_fields=["state", "auto_retry_count", "timeline", "updated_at"])
+        return Response({"status": "requeued", "incident_id": str(incident.incident_id)})
+
+    @action(detail=True, methods=["post"])
+    def archive(self, request, incident_id=None):
+        incident = self.get_object()
+        incident.archived_at = timezone.now()
+        incident.state = "resolved"
+        incident.resolved_at = timezone.now()
+        _append_incident_event(
+            incident,
+            "Incident archived",
+            actor=request.data.get("actor") or "engine",
+            notes=request.data.get("notes"),
+        )
+        incident.save(update_fields=["archived_at", "state", "resolved_at", "timeline", "updated_at"])
+        return Response(IncidentSerializer(incident).data)
+
+
+class TicketViewSet(viewsets.ModelViewSet):
+    queryset = Ticket.objects.all()
+    serializer_class = TicketSerializer
+    permission_classes = [TicketPermissions]
+    lookup_field = "ticket_id"
+
+    def get_queryset(self):
+        qs = Ticket.objects.select_related("incident")
+        status_q = self.request.query_params.get("status")
+        source = self.request.query_params.get("source")
+        if status_q:
+            qs = qs.filter(status=status_q)
+        if source:
+            qs = qs.filter(source=source)
+        return qs
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data["source"] = "manual"
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        ticket = serializer.save()
+
+        tl = ticket.timeline or []
+        tl.append({"timestamp": datetime.utcnow().isoformat(), "event": "Ticket created", "actor": "manual"})
+        ticket.timeline = tl
+        ticket.save(update_fields=["timeline", "updated_at"])
+
+        return Response(TicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"])
+    def assign(self, request, ticket_id=None):
+        ticket = self.get_object()
+        assignee = request.data.get("assignee")
+        if not assignee:
+            return Response({"error": "assignee required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        ticket.assignee = assignee
+        ticket.status = "in_progress"
+        tl = ticket.timeline or []
+        tl.append({"timestamp": datetime.utcnow().isoformat(), "event": f"Assigned to {assignee}", "actor": "engine"})
+        ticket.timeline = tl
+        ticket.save(update_fields=["assignee", "status", "timeline", "updated_at"])
+        return Response(TicketSerializer(ticket).data)
+
+    @action(detail=True, methods=["post"])
+    def resolve(self, request, ticket_id=None):
+        ticket = self.get_object()
+        notes = request.data.get("resolution_notes", "")
+        resolution_type = request.data.get("resolution_type", "manual")
+        if ticket.status == "resolved":
+            return Response({"error": "Ticket already resolved"}, status=status.HTTP_400_BAD_REQUEST)
+        ticket.resolve(resolved_by="engine", resolution_type=resolution_type, notes=notes)
+        return Response(TicketSerializer(ticket).data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_login(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+    if not username or not password:
+        return Response({"error": "username and password required"}, status=status.HTTP_400_BAD_REQUEST)
+    user = authenticate(request, username=username, password=password)
+    if not user:
+        return Response({"error": "invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+    if user.role in ["user", "moderator"] and not getattr(user, "email_verified", False):
+        return Response(
+            {"error": "email not verified", "verification_required": True},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    token, _ = Token.objects.get_or_create(user=user)
+    return Response(
+        {
+            "token": token.key,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "role": getattr(user, "role", "user"),
+                "is_superuser": user.is_superuser,
+            },
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_forgot(request):
+    username = request.data.get("username")
+    if not username:
+        return Response({"error": "username required"}, status=status.HTTP_400_BAD_REQUEST)
+    user = User.objects.filter(username=username).first()
+    if not user:
+        return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+    if not user.email:
+        return Response({"error": "email is missing for this user"}, status=status.HTTP_400_BAD_REQUEST)
+    if not getattr(user, "email_verified", False):
+        return Response({"error": "email not verified"}, status=status.HTTP_403_FORBIDDEN)
+    code = f"{random.randint(0, 999999):06d}"
+    expires = timezone.now() + timedelta(minutes=30)
+    reset_request = PasswordResetRequest.objects.create(user=user, code=code, expires_at=expires)
+    send_mail(
+        subject="BatchOps password reset code",
+        message=(
+            f"Your password reset code is {code}.\n"
+            f"It expires at {expires.isoformat()}.\n\n"
+            "If you did not request this, you can ignore this email."
+        ),
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        recipient_list=[user.email],
+        fail_silently=True,
+    )
+    return Response(
+        {
+            "reset_id": str(reset_request.request_id),
+            "expires_at": expires.isoformat(),
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_reset(request):
+    reset_id = request.data.get("reset_id")
+    code = request.data.get("code")
+    new_password = request.data.get("new_password")
+    if not reset_id or not code or not new_password:
+        return Response(
+            {"error": "reset_id, code, and new_password are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    reset_request = PasswordResetRequest.objects.filter(request_id=reset_id).first()
+    if not reset_request:
+        return Response({"error": "reset request not found"}, status=status.HTTP_404_NOT_FOUND)
+    if reset_request.used_at:
+        return Response({"error": "reset code already used"}, status=status.HTTP_400_BAD_REQUEST)
+    if reset_request.expires_at < timezone.now():
+        return Response({"error": "reset code expired"}, status=status.HTTP_400_BAD_REQUEST)
+    if str(reset_request.code) != str(code).strip():
+        return Response({"error": "invalid reset code"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = reset_request.user
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+    reset_request.used_at = timezone.now()
+    reset_request.save(update_fields=["used_at"])
+    Token.objects.filter(user=user).delete()
+    return Response({"status": "password_reset"})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_send_verification(request):
+    username = request.data.get("username")
+    if not username:
+        return Response({"error": "username required"}, status=status.HTTP_400_BAD_REQUEST)
+    user = User.objects.filter(username=username).first()
+    if not user:
+        return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+    if not user.email:
+        return Response({"error": "email is missing for this user"}, status=status.HTTP_400_BAD_REQUEST)
+    if getattr(user, "email_verified", False):
+        return Response({"status": "already_verified"})
+    code = f"{random.randint(0, 999999):06d}"
+    expires = timezone.now() + timedelta(minutes=30)
+    verification = EmailVerificationRequest.objects.create(user=user, code=code, expires_at=expires)
+    send_mail(
+        subject="Verify your BatchOps email",
+        message=(
+            f"Your verification code is {code}.\n"
+            f"It expires at {expires.isoformat()}.\n\n"
+            "If you did not request this, you can ignore this email."
+        ),
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        recipient_list=[user.email],
+        fail_silently=True,
+    )
+    return Response(
+        {
+            "verification_id": str(verification.request_id),
+            "expires_at": expires.isoformat(),
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def auth_verify_email(request):
+    verification_id = request.data.get("verification_id")
+    code = request.data.get("code")
+    username = request.data.get("username")
+    if not verification_id or not code or not username:
+        return Response(
+            {"error": "verification_id, username, and code are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    verification = EmailVerificationRequest.objects.filter(request_id=verification_id).first()
+    if not verification:
+        return Response({"error": "verification not found"}, status=status.HTTP_404_NOT_FOUND)
+    if verification.used_at:
+        return Response({"error": "verification code already used"}, status=status.HTTP_400_BAD_REQUEST)
+    if verification.expires_at < timezone.now():
+        return Response({"error": "verification code expired"}, status=status.HTTP_400_BAD_REQUEST)
+    if verification.user.username != username:
+        return Response({"error": "username does not match"}, status=status.HTTP_400_BAD_REQUEST)
+    if str(verification.code) != str(code).strip():
+        return Response({"error": "invalid verification code"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = verification.user
+    user.email_verified = True
+    user.save(update_fields=["email_verified"])
+    verification.used_at = timezone.now()
+    verification.save(update_fields=["used_at"])
+    return Response({"status": "email_verified"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def auth_me(request):
+    user = request.user
+    return Response(
+        {
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "role": getattr(user, "role", "user"),
+                "is_superuser": user.is_superuser,
+            }
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def auth_logout(request):
+    Token.objects.filter(user=request.user).delete()
+    return Response({"status": "logged_out"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def reports_summary(request):
+    upload_id = request.query_params.get("upload_id")
+    job_run_id = request.query_params.get("job_run_id")
+    requested_format = request.query_params.get("format", "csv").lower()
+    if requested_format not in {"csv", "pdf"}:
+        requested_format = "csv"
+
+    upload = None
+    job_run = None
+
+    if job_run_id:
+        job_run = JobRun.objects.select_related("upload").filter(run_id=job_run_id).first()
+        if job_run:
+            if not job_run.upload_id:
+                return Response(
+                    {"error": "Job run not associated with an upload yet"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            upload = job_run.upload
+            upload_id = str(job_run.upload_id)
+        else:
+            # If someone pasted an upload_id into job_run_id, fall back gracefully.
+            upload = Upload.objects.filter(upload_id=job_run_id).first()
+            if upload:
+                upload_id = str(upload.upload_id)
+                job_run_id = None
+            else:
+                return Response({"error": "Job run not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not upload_id:
+        return Response({"error": "upload_id or job_run_id required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if upload is None:
+        try:
+            upload = Upload.objects.get(upload_id=upload_id)
+        except Upload.DoesNotExist:
+            return Response({"error": "Upload not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if job_run and job_run.status not in ["success", "failed"]:
+        return Response(
+            {"error": "Report still generating", "status": job_run.status},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    mode = (upload.process_mode or "transform_gradebook").strip().lower()
+    filename_prefix = "summary" if mode == "transform_gradebook" else "processed"
+
+    if requested_format == "pdf":
+        if upload.report_pdf:
+            data = base64.b64decode(upload.report_pdf)
+            resp = HttpResponse(data, content_type="application/pdf")
+            resp["Content-Disposition"] = f'attachment; filename="{filename_prefix}-{upload.upload_id}.pdf"'
+            return resp
+        regenerate_report(upload)
+        if upload.report_pdf:
+            data = base64.b64decode(upload.report_pdf)
+            resp = HttpResponse(data, content_type="application/pdf")
+            resp["Content-Disposition"] = f'attachment; filename="{filename_prefix}-{upload.upload_id}.pdf"'
+            return resp
+        return Response({"error": "PDF not available yet"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Prefer the DB-stored report content when available.
+    if upload.report_csv:
+        resp = HttpResponse(upload.report_csv, content_type="text/csv")
+        resp["Content-Disposition"] = f'attachment; filename="{filename_prefix}-{upload.upload_id}.csv"'
+        return resp
+
+    # Prefer the pipeline-generated processed/summary CSV, if it exists.
+    export_dir = getattr(settings, "EXPORT_DIR", "/app/storage/exports")
+    export_path = os.path.join(export_dir, f"{upload.upload_id}-{filename_prefix}.csv")
+
+    def _try_path(path: str | None):
+        if not path:
+            return None
+        try:
+            if os.path.exists(path):
+                with open(path, "r", newline="", encoding="utf-8") as f:
+                    data = f.read()
+                resp = HttpResponse(data, content_type="text/csv")
+                resp["Content-Disposition"] = f'attachment; filename="{filename_prefix}-{upload.upload_id}.csv"'
+                return resp
+        except OSError:
+            return None
+        return None
+
+    candidate_paths = []
+    if upload.report_path:
+        candidate_paths.append(upload.report_path)
+    candidate_paths.append(export_path)
+
+    for path in candidate_paths:
+        resp = _try_path(path)
+        if resp:
+            return resp
+
+    regenerated = regenerate_report(upload)
+    if regenerated:
+        resp = _try_path(regenerated)
+        if resp:
+            return resp
+
+    # Fallback: simple one-row summary if the detailed export is missing.
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Field", "Value"])
+    writer.writerow(["Upload ID", str(upload.upload_id)])
+    writer.writerow(["Department", upload.department])
+    writer.writerow(["Filename", upload.filename])
+    writer.writerow(["Status", upload.status])
+    writer.writerow(["Received At", upload.received_at.isoformat()])
+
+    resp = HttpResponse(output.getvalue(), content_type="text/csv")
+    resp["Content-Disposition"] = f'attachment; filename=\"report-{upload_id}.csv\"'
+    return resp
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def api_health(request):
+    health = {"django": "Healthy", "redis": "Unknown", "postgres": "Unknown", "rq_workers": "Unknown"}
+
+    try:
+        redis_conn.ping()
+        health["redis"] = "Healthy"
+    except Exception as exc:  # noqa: BLE001
+        health["redis"] = f"Unhealthy ({exc.__class__.__name__})"
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1;")
+        health["postgres"] = "Healthy"
+    except Exception as exc:  # noqa: BLE001
+        health["postgres"] = f"Unhealthy ({exc.__class__.__name__})"
+
+    try:
+        workers = Worker.all(connection=redis_conn)
+        if workers:
+            health["rq_workers"] = f"Healthy ({len(workers)} online)"
+        else:
+            health["rq_workers"] = "Unhealthy (no workers registered)"
+    except Exception as exc:  # noqa: BLE001
+        health["rq_workers"] = f"Unknown ({exc.__class__.__name__})"
+
+    return Response(health)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def metrics_view(request):
+    """
+    Prometheus text-format metrics endpoint.
+
+    This is intentionally *not* JSON – the frontend even checks that /api/metrics
+    returns non‑JSON text so it can show a helpful warning.
+    """
+    body = get_metrics_data()
+    # Prometheus text exposition format
+    return HttpResponse(body, content_type="text/plain; version=0.0.4; charset=utf-8")
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def dashboard_metrics(request):
+    """
+    JSON KPIs for the dashboard cards.
+
+    Kept separate from the Prometheus /api/metrics endpoint so that Grafana /
+    Prometheus can scrape plain text while the UI can consume structured JSON.
+    """
+    today = timezone.localdate()
+
+    todays_uploads = Upload.objects.filter(received_at__date=today).count()
+    todays_runs = JobRun.objects.filter(
+        Q(started_at__date=today) | Q(finished_at__date=today)
+    ).count()
+    open_incidents = Incident.objects.filter(state__in=["open", "in_progress"]).count()
+    open_tickets = Ticket.objects.filter(status__in=["open", "in_progress"]).count()
+
+    return Response(
+        {
+            "kpis": {
+            "todays_uploads": todays_uploads,
+            "todays_runs": todays_runs,
+                "open_incidents": open_incidents,
+                "open_tickets": open_tickets,
+            }
+        }
+    )

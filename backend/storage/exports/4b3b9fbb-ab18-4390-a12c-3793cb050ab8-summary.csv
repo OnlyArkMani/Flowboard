@@ -1,0 +1,23 @@
+field,value
+upload_id,4b3b9fbb-ab18-4390-a12c-3793cb050ab8
+department,Examination
+filename,sample_school_results.pdf
+rows,55
+cols,6
+columns,"sample, school, results, midterm, student_id, score"
+student_id.count,0.0
+student_id.mean,
+student_id.std,
+student_id.min,
+student_id.25%,
+student_id.50%,
+student_id.75%,
+student_id.max,
+score.count,0.0
+score.mean,
+score.std,
+score.min,
+score.25%,
+score.50%,
+score.75%,
+score.max,

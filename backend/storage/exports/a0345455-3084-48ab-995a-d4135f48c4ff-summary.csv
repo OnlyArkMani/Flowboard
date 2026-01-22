@@ -1,0 +1,18 @@
+field,value
+section,Executive summary
+status,Completed
+processed_at,2026-01-21T01:17:41.024605+00:00
+processing_mode,transform_gradebook
+plan_notes,Standard transform applied
+rows,4
+cols,5
+numeric_columns,score
+section,Dataset profile
+department,Examination
+filename,school_results_updated.xlsx
+columns,"student_id, student_name, class, subject, score"
+section,Numeric statistics
+score.count,4
+score.mean,84.25
+score.min,76
+score.max,92

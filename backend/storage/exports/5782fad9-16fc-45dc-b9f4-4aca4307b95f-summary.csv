@@ -1,0 +1,23 @@
+field,value
+upload_id,5782fad9-16fc-45dc-b9f4-4aca4307b95f
+department,Attendance
+filename,att-ingest-20251224-1513.csv
+rows,4
+cols,7
+columns,"student_id, student_name, class, score, attendance_percent, status, recorded_at"
+score.count,4.0
+score.mean,84.875
+score.std,6.511208285205853
+score.min,76.0
+score.25%,82.0
+score.50%,86.75
+score.75%,89.625
+score.max,90.0
+attendance_percent.count,4.0
+attendance_percent.mean,92.125
+attendance_percent.std,2.8016364265669216
+attendance_percent.min,88.9
+attendance_percent.25%,90.475
+attendance_percent.50%,92.1
+attendance_percent.75%,93.75
+attendance_percent.max,95.4

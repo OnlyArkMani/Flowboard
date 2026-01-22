@@ -1,0 +1,23 @@
+field,value
+upload_id,f388a608-f2f5-4b56-9bbd-70d995ee7c94
+department,All Departments
+filename,all-departments-ingest-20251225-0030.csv
+rows,24
+cols,8
+columns,"department, student_id, student_name, class, score, attendance_percent, status, recorded_at"
+score.count,24.0
+score.mean,83.9875
+score.std,6.313636897190495
+score.min,69.0
+score.25%,79.65
+score.50%,85.15
+score.75%,88.525
+score.max,93.4
+attendance_percent.count,24.0
+attendance_percent.mean,92.1125
+attendance_percent.std,3.5148520285509455
+attendance_percent.min,85.0
+attendance_percent.25%,89.75
+attendance_percent.50%,92.25
+attendance_percent.75%,94.5
+attendance_percent.max,98.0

@@ -1,0 +1,5 @@
+student_id,student_name,class,score,attendance_percent,status,recorded_at
+FEE201,Vikram Joshi,11-A,91.00,92.00,paid,2025-12-24T07:16:02.386729
+FEE202,Meera Kapoor,11-B,88.00,90.50,partial,2025-12-24T07:16:02.386729
+FEE203,Dev Shah,12-A,93.40,94.20,paid,2025-12-24T07:16:02.386729
+FEE204,Anaya Gupta,12-B,85.60,89.00,pending,2025-12-24T07:16:02.386729

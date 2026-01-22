@@ -1,0 +1,36 @@
+field,value
+section,Executive summary
+status,Completed
+processed_at,2026-01-21T06:55:54.752004+05:30
+processing_mode,transform_gradebook
+plan_notes,Standard transform applied
+rows,4
+cols,7
+total_cells,28
+missing_cells,0
+missing_cell_rate,0.0%
+duplicate_rows,0
+duplicate_student_ids,0
+numeric_columns,"score, attendance_percent"
+section,Dataset profile
+department,Science
+filename,sci-ingest-20260121-0125.csv
+columns,"student_id, student_name, class, score, attendance_percent, status, recorded_at"
+section,Column completeness (lowest)
+student_id,100.0%
+student_name,100.0%
+class,100.0%
+score,100.0%
+attendance_percent,100.0%
+status,100.0%
+section,Numeric statistics
+score.count,4
+score.mean,86.38
+score.median,87.1
+score.min,79.8
+score.max,91.5
+attendance_percent.count,4
+attendance_percent.mean,93.5
+attendance_percent.median,93.5
+attendance_percent.min,90
+attendance_percent.max,97

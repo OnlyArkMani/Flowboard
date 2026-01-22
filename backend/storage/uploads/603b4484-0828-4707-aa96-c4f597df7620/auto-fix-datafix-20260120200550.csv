@@ -1,0 +1,999 @@
+sno,supersetid,student_name,student_id,department,subject,program,labno,block
+1,6212740,Sarthak Panwar,229209003,Bachelors of Technology,CCE,B.Tech,111,AB-1
+2,6212587,Karan Vineet Agarwal,229303027,Bachelors of Technology,CCE,B.Tech,111,AB-1
+3,6212688,Shivendra Singh,229303344,Bachelors of Technology,CCE,B.Tech,111,AB-1
+4,6212703,Vidit Roy,229303056,Bachelors of Technology,CCE,B.Tech,111,AB-1
+5,6212655,Tummalapalli Naga Pranav,229303215,Bachelors of Technology,CCE,B.Tech,111,AB-1
+6,6212615,Ayush Bhushan Singh,229303042,Bachelors of Technology,CCE,B.Tech,111,AB-1
+7,6212643,Vikrant Kawadkar,229303264,Bachelors of Technology,CCE,B.Tech,111,AB-1
+8,6212647,Vasu Vikash Verma,229303242,Bachelors of Technology,CCE,B.Tech,111,AB-1
+9,6212702,Arunabha Mukhopadhyay,229303166,Bachelors of Technology,CCE,B.Tech,111,AB-1
+10,6294206,Mitesh Gupta,229303404,Bachelors of Technology,CCE,B.Tech,111,AB-1
+11,6212625,Garvit Sharma,229303241,Bachelors of Technology,CCE,B.Tech,111,AB-1
+12,6212706,Meghneel Gogoi,229303274,Bachelors of Technology,CCE,B.Tech,111,AB-1
+13,6212737,Pranay Jain,229303451,Bachelors of Technology,CCE,B.Tech,111,AB-1
+14,6212757,Ridhi Garg,229303415,Bachelors of Technology,CCE,B.Tech,111,AB-1
+15,6212720,Mohit Singh Rathore,229303452,Bachelors of Technology,CCE,B.Tech,111,AB-1
+16,6212710,Sai Praketh Voona,229303083,Bachelors of Technology,CCE,B.Tech,111,AB-1
+17,6338553,Naman Sharma,229303407,Bachelors of Technology,CCE,B.Tech,111,AB-1
+18,6212629,Tejas Hemant Susladkar,229303225,Bachelors of Technology,CCE,B.Tech,111,AB-1
+19,6212761,Vaibhav Singhal,229303388,Bachelors of Technology,CCE,B.Tech,111,AB-1
+20,6212695,Vijay Singh,229303022,Bachelors of Technology,CCE,B.Tech,111,AB-1
+21,6212595,Kavya Yadav,229303318,Bachelors of Technology,CCE,B.Tech,111,AB-1
+22,6212755,Rahul Shekhawat,229303372,Bachelors of Technology,CCE,B.Tech,111,AB-1
+23,6212626,Shobhit Pandey,229303447,Bachelors of Technology,CCE,B.Tech,111,AB-1
+24,6212553,Yash Saxena,229303023,Bachelors of Technology,CCE,B.Tech,111,AB-1
+25,6212669,SHUBHANG SUDHANSU,229303464,Bachelors of Technology,CCE,B.Tech,111,AB-1
+26,6212605,Hardik Kaushik,229303361,Bachelors of Technology,CCE,B.Tech,111,AB-1
+27,6212667,Aaryan Vinod kale,229303031,Bachelors of Technology,CCE,B.Tech,111,AB-1
+28,6212763,Shashank Pandey,229303430,Bachelors of Technology,CCE,B.Tech,111,AB-1
+29,6212729,Varad Laxmikant Lakhotiya,229303188,Bachelors of Technology,CCE,B.Tech,111,AB-1
+30,6212603,dhruv anand,229303087,Bachelors of Technology,CCE,B.Tech,111,AB-1
+31,6212760,Sambhav Saxena,229303431,Bachelors of Technology,CCE,B.Tech,111,AB-1
+32,6212564,Aditya Anand Jahagirdar,229303060,Bachelors of Technology,CCE,B.Tech,111,AB-1
+33,6212741,Ayush Kumar,229303417,Bachelors of Technology,CCE,B.Tech,111,AB-1
+34,6212668,Sai Ashok Bhanage,229303238,Bachelors of Technology,CCE,B.Tech,111,AB-1
+35,6212772,Sahir Khan,229303398,Bachelors of Technology,CCE,B.Tech,111,AB-1
+36,6212622,Akshat Upadhyay,229303373,Bachelors of Technology,CCE,B.Tech,111,AB-1
+37,6212607,Anudita Nigam,229303364,Bachelors of Technology,CCE,B.Tech,111,AB-1
+38,6212636,Alafia Zafar,229303059,Bachelors of Technology,CCE,B.Tech,111,AB-1
+39,6212750,Leesha,229303077,Bachelors of Technology,CCE,B.Tech,111,AB-1
+40,6212773,Tamanna Chauhan,229303382,Bachelors of Technology,CCE,B.Tech,111,AB-1
+41,6338550,Sankalp Tyagi,229303357,Bachelors of Technology,CCE,B.Tech,111,AB-1
+42,6212746,Divyadeep Sundriyal,229303458,Bachelors of Technology,CCE,B.Tech,111,AB-1
+43,6212699,Kanishk Dwivedi,229303411,Bachelors of Technology,CCE,B.Tech,111,AB-1
+44,6212697,Devansh Singh Singh Rawat,229303186,Bachelors of Technology,CCE,B.Tech,111,AB-1
+45,6212724,Anushk Dua,229303001,Bachelors of Technology,CCE,B.Tech,111,AB-1
+46,6212672,Kushagra Gaur,229303325,Bachelors of Technology,CCE,B.Tech,111,AB-1
+47,6212604,Devpratap Rakesh Singh,229303018,Bachelors of Technology,CCE,B.Tech,111,AB-1
+48,6212586,RISHI MITTAL,229303300,Bachelors of Technology,CCE,B.Tech,111,AB-1
+49,6212627,Siddhaant Verma,229303162,Bachelors of Technology,CCE,B.Tech,111,AB-1
+50,6212754,Rajat Yadav,229303457,Bachelors of Technology,CCE,B.Tech,111,AB-1
+51,6212609,aryan singh,229303356,Bachelors of Technology,CCE,B.Tech,111,AB-1
+52,6212591,Harshit Sinha,229303089,Bachelors of Technology,CCE,B.Tech,111,AB-1
+53,6212712,Vansh Jaggi,229309101,Bachelors of Technology,CCE,B.Tech,111,AB-1
+54,6212621,HARSH VARDHAN SONI,229303002,Bachelors of Technology,CCE,B.Tech,111,AB-1
+55,6212708,Danish Taiyebi,229303092,Bachelors of Technology,CCE,B.Tech,111,AB-1
+56,6212649,Abheek Singh,229303267,Bachelors of Technology,CCE,B.Tech,111,AB-1
+57,6212766,Pavneet Thind,229303334,Bachelors of Technology,CCE,B.Tech,111,AB-1
+58,6212739,Adhyan Aditya,229303014,Bachelors of Technology,CCE,B.Tech,111,AB-1
+59,6212685,Srijan Sharma,229303168,Bachelors of Technology,CCE,B.Tech,111,AB-1
+60,6212751,ARYAN VASUDEV,229303343,Bachelors of Technology,CCE,B.Tech,111,AB-1
+61,6212776,Anav Lamba,229303405,Bachelors of Technology,CCE,B.Tech,111,AB-1
+62,6212694,Sanchi Sanjay Mishra,229303029,Bachelors of Technology,CCE,B.Tech,111,AB-1
+63,6212674,Aayush Amit Makhija,229303113,Bachelors of Technology,CCE,B.Tech,111,AB-1
+64,6212679,Agrima,229303441,Bachelors of Technology,CCE,B.Tech,111,AB-1
+65,6212610,Prakhar Verma,229303312,Bachelors of Technology,CCE,B.Tech,111,AB-1
+66,6212749,HIMALAYA SHARMA,229303245,Bachelors of Technology,CCE,B.Tech,111,AB-1
+67,6212743,Kashvi Sharma,229303240,Bachelors of Technology,CCE,B.Tech,111,AB-1
+68,6212733,Mohammed Azeem,229303399,Bachelors of Technology,CCE,B.Tech,111,AB-1
+69,6294196,Aradhya Sharma,229303144,Bachelors of Technology,CCE,B.Tech,111,AB-1
+70,6212717,Kushagra Agarwal,229303400,Bachelors of Technology,CCE,B.Tech,111,AB-1
+71,6212671,Zaid Mustafa,229303378,Bachelors of Technology,CCE,B.Tech,111,AB-1
+72,6212709,Nandini Rajesh,229303035,Bachelors of Technology,CCE,B.Tech,111,AB-1
+73,6212670,Aditya Dhananjay Singh,229303263,Bachelors of Technology,CCE,B.Tech,111,AB-1
+74,6212666,Sanidhya Mehta,229303449,Bachelors of Technology,CCE,B.Tech,111,AB-1
+75,6212718,Animesh Singh,229303213,Bachelors of Technology,CCE,B.Tech,111,AB-1
+76,6212589,Sujit Maruti Patil,229303165,Bachelors of Technology,CCE,B.Tech,111,AB-1
+77,6212713,Rahil Chavda,229303386,Bachelors of Technology,CCE,B.Tech,111,AB-1
+78,6212781,Anshul Jain,229303393,Bachelors of Technology,CCE,B.Tech,111,AB-1
+79,6212725,Udisha Jaiswal,229303196,Bachelors of Technology,CCE,B.Tech,111,AB-1
+80,6212762,Aayush Kumar,229303068,Bachelors of Technology,CCE,B.Tech,111,AB-1
+81,6294210,Ayan Seal,229303444,Bachelors of Technology,CCE,B.Tech,111,AB-1
+82,6726020,Sanyam Jain,229303038,Bachelors of Technology,CCE,B.Tech,111,AB-1
+83,6212680,ANUSHKA SINGH,229303234,Bachelors of Technology,CCE,B.Tech,111,AB-1
+84,6294197,Aijak Debbarma,229303148,Bachelors of Technology,CCE,B.Tech,111,AB-1
+85,6212690,Pranshu Tijil,229303098,Bachelors of Technology,CCE,B.Tech,111,AB-1
+86,6212673,Rohan Vivek Munot,229303126,Bachelors of Technology,CCE,B.Tech,111,AB-1
+87,6212623,YASHARTH SINGH,229303192,Bachelors of Technology,CCE,B.Tech,111,AB-1
+88,6212719,Riya Kathuria,229303187,Bachelors of Technology,CCE,B.Tech,111,AB-1
+89,6212664,annanya Sanjay gairola,229303308,Bachelors of Technology,CCE,B.Tech,111,AB-1
+90,6212682,Vardan Agarwal,229303434,Bachelors of Technology,CCE,B.Tech,111,AB-1
+91,6212727,Raunaq Makkar,229303135,Bachelors of Technology,CCE,B.Tech,111,AB-1
+92,6212764,Kanha Gupta,229303421,Bachelors of Technology,CCE,B.Tech,111,AB-1
+93,6212747,Yaduvir Narayanaswamy,229303401,Bachelors of Technology,CCE,B.Tech,111,AB-1
+94,6212642,HRITICK VISHWAS,229303105,Bachelors of Technology,CCE,B.Tech,111,AB-1
+95,6212736,Om Panda,229303076,Bachelors of Technology,CCE,B.Tech,111,AB-1
+96,6212653,Mihika Arora,229303208,Bachelors of Technology,CCE,B.Tech,111,AB-1
+97,6212631,Swati Bhardwaj,229303007,Bachelors of Technology,CCE,B.Tech,111,AB-1
+98,6212765,Patel Maitri Sanjaykumar,229303111,Bachelors of Technology,CCE,B.Tech,111,AB-1
+99,6212753,Ishan Aaditya,229303314,Bachelors of Technology,CCE,B.Tech,111,AB-1
+100,6212722,Chirayu Shailesh Anchan,229303079,Bachelors of Technology,CCE,B.Tech,111,AB-1
+101,6338555,Suhani Valecha,229303454,Bachelors of Technology,CCE,B.Tech,112,AB-1
+102,6212714,Aishani Basu,229303303,Bachelors of Technology,CCE,B.Tech,112,AB-1
+103,6212691,Saurav Singh Negi,229303286,Bachelors of Technology,CCE,B.Tech,112,AB-1
+104,6212617,Harshit Malviya,229303406,Bachelors of Technology,CCE,B.Tech,112,AB-1
+105,6212633,Jatin Maheshwari,229303420,Bachelors of Technology,CCE,B.Tech,112,AB-1
+106,6212638,Arpita Garg,229303156,Bachelors of Technology,CCE,B.Tech,112,AB-1
+107,6212777,Naman Bansal,229303412,Bachelors of Technology,CCE,B.Tech,112,AB-1
+108,6212657,Atharv Chauhan,229303102,Bachelors of Technology,CCE,B.Tech,112,AB-1
+109,6212592,Ayush Srivastava,229303439,Bachelors of Technology,CCE,B.Tech,112,AB-1
+110,6294208,Rajdeep Bakliwal,229303416,Bachelors of Technology,CCE,B.Tech,112,AB-1
+111,6212782,Namrata Vishwambhar Mewati,229303476,Bachelors of Technology,CCE,B.Tech,112,AB-1
+112,6212639,Skand Agarwal,229303396,Bachelors of Technology,CCE,B.Tech,112,AB-1
+113,6212593,Dev Aashish Singh,229303021,Bachelors of Technology,CCE,B.Tech,112,AB-1
+114,6212596,Vatsal Birla,229301133,Bachelors of Technology,CCE,B.Tech,112,AB-1
+115,6212759,Mahi Bhardwaj,229303128,Bachelors of Technology,CCE,B.Tech,112,AB-1
+116,6212651,Abhay Singh,229303368,Bachelors of Technology,CCE,B.Tech,112,AB-1
+117,6212646,Arya Aditya,229303316,Bachelors of Technology,CCE,B.Tech,112,AB-1
+118,6212563,Ayush Raj,229303224,Bachelors of Technology,CCE,B.Tech,112,AB-1
+119,6212745,Nausheen Nausheen,229303467,Bachelors of Technology,CCE,B.Tech,112,AB-1
+120,6212616,Astha Gupta,229303410,Bachelors of Technology,CCE,B.Tech,112,AB-1
+121,6294202,Abhinandan Das,229303328,Bachelors of Technology,CCE,B.Tech,112,AB-1
+122,6212590,Saieesh Chanana,229303012,Bachelors of Technology,CCE,B.Tech,112,AB-1
+123,6212783,Akshit Pandey,229303472,Bachelors of Technology,CCE,B.Tech,112,AB-1
+124,6212619,Parth Vitthal Hande,229303137,Bachelors of Technology,CCE,B.Tech,112,AB-1
+125,6212681,Ritvik Srivastava,229303332,Bachelors of Technology,CCE,B.Tech,112,AB-1
+126,6212659,Yagyavalkya Singh Rathore,229303254,Bachelors of Technology,CCE,B.Tech,112,AB-1
+127,6212687,Harsh Kumar,229303349,Bachelors of Technology,CCE,B.Tech,112,AB-1
+128,6212742,Ayush Jaiswal,229303455,Bachelors of Technology,CCE,B.Tech,112,AB-1
+129,6212693,Srijan Kumar,229303339,Bachelors of Technology,CCE,B.Tech,112,AB-1
+130,6212715,Aryan Purohit,229303250,Bachelors of Technology,CCE,B.Tech,112,AB-1
+131,6212678,Nidhi Rajneesh Verma,229303005,Bachelors of Technology,CCE,B.Tech,115,AB-1
+131,6212678,Nidhi Rajneesh Verma,229303005,Bachelors of Technology,CCE,B.Tech,115,AB-1
+132,6212561,SHARIQUE HASAN,229303154,Bachelors of Technology,CCE,B.Tech,115,AB-1
+132,6212561,SHARIQUE HASAN,229303154,Bachelors of Technology,CCE,B.Tech,115,AB-1
+133,6212558,Sanya,229303054,Bachelors of Technology,CCE,B.Tech,115,AB-1
+133,6212558,Sanya,229303054,Bachelors of Technology,CCE,B.Tech,115,AB-1
+134,6212613,Mudit Mathur,229303307,Bachelors of Technology,CCE,B.Tech,115,AB-1
+134,6212613,Mudit Mathur,229303307,Bachelors of Technology,CCE,B.Tech,115,AB-1
+135,6212606,Moinuddin Qureshi,229303432,Bachelors of Technology,CCE,B.Tech,115,AB-1
+135,6212606,Moinuddin Qureshi,229303432,Bachelors of Technology,CCE,B.Tech,115,AB-1
+136,6212756,Avdhesh Singh,229303437,Bachelors of Technology,CCE,B.Tech,115,AB-1
+136,6212756,Avdhesh Singh,229303437,Bachelors of Technology,CCE,B.Tech,115,AB-1
+137,6212723,Achint Rajesh Honavar,229303270,Bachelors of Technology,CCE,B.Tech,115,AB-1
+137,6212723,Achint Rajesh Honavar,229303270,Bachelors of Technology,CCE,B.Tech,115,AB-1
+138,6212624,Aryan Gopal Goyal,229303435,Bachelors of Technology,CCE,B.Tech,115,AB-1
+138,6212624,Aryan Gopal Goyal,229303435,Bachelors of Technology,CCE,B.Tech,115,AB-1
+139,6212614,Aditya Kumar,229303109,Bachelors of Technology,CCE,B.Tech,115,AB-1
+139,6212614,Aditya Kumar,229303109,Bachelors of Technology,CCE,B.Tech,115,AB-1
+140,6212579,Saksham Gupta,229303150,Bachelors of Technology,CCE,B.Tech,115,AB-1
+140,6212579,Saksham Gupta,229303150,Bachelors of Technology,CCE,B.Tech,115,AB-1
+141,6212661,Suvigya Shah,229303251,Bachelors of Technology,CCE,B.Tech,115,AB-1
+141,6212661,Suvigya Shah,229303251,Bachelors of Technology,CCE,B.Tech,115,AB-1
+142,6212554,Ujjwal Sharma Sharma,229303055,Bachelors of Technology,CCE,B.Tech,115,AB-1
+142,6212554,Ujjwal Sharma Sharma,229303055,Bachelors of Technology,CCE,B.Tech,115,AB-1
+143,6212562,YUV RAJ,229303039,Bachelors of Technology,CCE,B.Tech,115,AB-1
+143,6212562,YUV RAJ,229303039,Bachelors of Technology,CCE,B.Tech,115,AB-1
+144,6212620,Aashish,229303013,Bachelors of Technology,CCE,B.Tech,115,AB-1
+144,6212620,Aashish,229303013,Bachelors of Technology,CCE,B.Tech,115,AB-1
+145,6212588,Tanisha Salil Mishra,229303442,Bachelors of Technology,CCE,B.Tech,115,AB-1
+145,6212588,Tanisha Salil Mishra,229303442,Bachelors of Technology,CCE,B.Tech,115,AB-1
+146,6212654,Sai Janeesh Reddy Goureddy,229303117,Bachelors of Technology,CCE,B.Tech,115,AB-1
+146,6212654,Sai Janeesh Reddy Goureddy,229303117,Bachelors of Technology,CCE,B.Tech,115,AB-1
+147,6212711,Mahim Kumawat,229303460,Bachelors of Technology,CCE,B.Tech,115,AB-1
+147,6212711,Mahim Kumawat,229303460,Bachelors of Technology,CCE,B.Tech,115,AB-1
+148,6212677,Shaurya Vardhan Singh,229303340,Bachelors of Technology,CCE,B.Tech,115,AB-1
+148,6212677,Shaurya Vardhan Singh,229303340,Bachelors of Technology,CCE,B.Tech,115,AB-1
+149,6212696,Shrivatsa Atman Trivedi,229303177,Bachelors of Technology,CCE,B.Tech,115,AB-1
+149,6212696,Shrivatsa Atman Trivedi,229303177,Bachelors of Technology,CCE,B.Tech,115,AB-1
+150,6212635,Md Mobasshir,229303402,Bachelors of Technology,CCE,B.Tech,115,AB-1
+150,6212635,Md Mobasshir,229303402,Bachelors of Technology,CCE,B.Tech,115,AB-1
+151,6212752,Alokik Agarwal,229303391,Bachelors of Technology,CCE,B.Tech,115,AB-1
+151,6212752,Alokik Agarwal,229303391,Bachelors of Technology,CCE,B.Tech,115,AB-1
+152,6212600,Yuvraj Singh Rathore,229303413,Bachelors of Technology,CCE,B.Tech,115,AB-1
+152,6212600,Yuvraj Singh Rathore,229303413,Bachelors of Technology,CCE,B.Tech,115,AB-1
+153,6212744,Tanish Kesarwani,229303136,Bachelors of Technology,CCE,B.Tech,115,AB-1
+153,6212744,Tanish Kesarwani,229303136,Bachelors of Technology,CCE,B.Tech,115,AB-1
+154,6212648,Priya Ranjan,229303082,Bachelors of Technology,CCE,B.Tech,115,AB-1
+154,6212648,Priya Ranjan,229303082,Bachelors of Technology,CCE,B.Tech,115,AB-1
+155,6212665,Saiyam Bathla,229303292,Bachelors of Technology,CCE,B.Tech,115,AB-1
+155,6212665,Saiyam Bathla,229303292,Bachelors of Technology,CCE,B.Tech,115,AB-1
+156,6212565,Nitin kumar,229303381,Bachelors of Technology,CCE,B.Tech,115,AB-1
+156,6212565,Nitin kumar,229303381,Bachelors of Technology,CCE,B.Tech,115,AB-1
+157,6212556,Arya Vardhan,229303322,Bachelors of Technology,CCE,B.Tech,115,AB-1
+157,6212556,Arya Vardhan,229303322,Bachelors of Technology,CCE,B.Tech,115,AB-1
+158,6212734,TUSHAR SINGHAL,229303252,Bachelors of Technology,CCE,B.Tech,115,AB-1
+158,6212734,TUSHAR SINGHAL,229303252,Bachelors of Technology,CCE,B.Tech,115,AB-1
+159,6212652,Sneha Shekhar,229303423,Bachelors of Technology,CCE,B.Tech,115,AB-1
+159,6212652,Sneha Shekhar,229303423,Bachelors of Technology,CCE,B.Tech,115,AB-1
+160,6212572,Sahil Kalra,229303321,Bachelors of Technology,CCE,B.Tech,115,AB-1
+160,6212572,Sahil Kalra,229303321,Bachelors of Technology,CCE,B.Tech,115,AB-1
+161,6212549,Aditya Verma,229303139,Bachelors of Technology,CCE,B.Tech,116,AB-1
+162,6212560,Yash Sharma,229303181,Bachelors of Technology,CCE,B.Tech,116,AB-1
+163,6213457,Ishika Jain,229310410,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+164,6213558,Om Satyam Panda,229310076,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+165,6213392,Kapil Garg,229310136,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+166,6213449,Kushar Bajaj,229310126,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+167,6213542,Sagnik Gangopadhyay,229310415,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+168,6213520,Vansh Jain,229310042,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+169,6213488,Dhruv Kunzru,229303143,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+170,6213346,Abhinav Agrawal,229310193,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+171,6213406,Eish Agarwal,229310181,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+172,6213562,Arushi Gupta,229310030,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+173,6213394,Kritika Pahuja,229310048,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+174,6213419,Aditya Prakash Sinha,229310189,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+175,6213434,Apoorv Sharma,229310356,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+176,6213414,Harsh Mall,229311180,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+177,6213486,Divyanshu Agarwal,229310157,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+178,6213448,Chanchal Kataria,229309065,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+179,6213361,Alaukik Bajpai,229302169,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+180,6213391,Rajveer Singh Gohil,229310183,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+181,6213445,Rushil Misra,229310385,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+182,6213405,Bhavya Arora,229310078,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+183,6213487,Syeda Asmi Zaffor,229310460,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+184,6213433,Kawshal Ram,229302043,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+185,6213415,Sanket Sunil Dharne,229310111,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+186,6213380,Ashmit Aggarwal,229310242,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+187,6213564,Prisha Anand,229310287,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+188,6213582,Aditya Raj,229310470,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+189,6213526,Avni Ahuja,229302287,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+190,6213450,Nadeem Gauhar,229310372,Bachelors of Technology,CSE - AIML,B.Tech,116,AB-1
+191,6213573,Sanidhya Shandilya,229310388,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+192,6213404,KUMAR DIVYANSHU,229310405,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+193,6213460,Vedika Singh,229310315,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+194,6213568,Kritvi Jagatramka,229310276,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+195,6213489,Priyanshi Sinha,229310431,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+196,6213343,Rajat yadav,229310104,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+197,6213461,Bhavya Bhambhani,229310077,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+198,6213412,Unnati Singh,229310143,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+199,6213506,shambhavi bajoria,229311120,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+200,6213527,Harshith G,229310408,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+201,6213494,Shad Alam,229309140,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+202,6213528,ayushman gupta,229311073,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+203,6213549,Hardik Gupta,229310238,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+204,6213505,Vansh Goyal,229310058,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+205,6213525,Hunar Sikka,229310458,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+206,6213410,Rudra Nayyar,229311168,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+207,6213473,Vineet Vidyadhar Muley,229310401,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+208,6213553,Chetanya Jolly,229310256,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+209,6213571,Maldev Singh Chouhan,229310034,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+210,6213397,Prisha Patidar,229310093,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+211,6213454,Mohammad Faiz Khan,229310462,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+212,6213402,Akshat Singh Panwar,229310226,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+213,6213484,Himank Xavier Soren,229310011,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+214,6213429,Kishlay Yadav,229310152,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+215,6213378,Ayan Joshi,229309053,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+216,6338574,Aditya bansal,229310165,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+217,6213423,Shivangi Singh,229302450,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+218,6213446,Saniya Prashant Giripunje,229310079,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+219,6213357,Snigdha Dixit,229310060,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+220,6213481,Aashvi Jain,229310185,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+221,6213438,Chaitanya Vishwakarma,229302452,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+222,6213534,Aayu Singh,229311021,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+223,6213515,Harsh Kumar,229310013,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+224,6213498,Swar Bhatia,229310363,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+225,6213511,Chahat Agarwal,229310422,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+226,6213421,Pranav Anand,229310373,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+227,6213561,Shrashti Dwivedi,229310142,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+228,6213504,Ajitesh Saharan,229310182,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+229,6213398,Aarav Asthana,229310288,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+230,6213363,Vihaan Gadodia,229310112,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+231,6213522,Arnav Gupta,229310038,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+232,6213458,Shreya Yogesh Shedge,229310170,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+233,6213465,Ishan Jain,229310159,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+234,6213372,Shivansh Rajput,229310101,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+235,6213468,Megha Vasandani,229310398,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+236,6213382,Vihan Jain,229311088,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+237,6213439,Anmol Verma,229310176,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+238,6213417,Aarush Tandon,229310290,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+239,6213442,Navya Nanda,229310134,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+240,6213535,Bhavya,229310098,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+241,6213396,Kunjika Nagpal,229310452,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+242,6213354,Shivam Mishra,229310202,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+243,6213521,Vibhanshu Dixit,229310350,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+244,6213492,Poorak,229309196,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+245,6213435,Shubham Jha,229311131,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+246,6213339,Aryan Mishra,229310118,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+247,6213459,Ananta Taneja,229303233,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+248,6213379,Samyak Jain,229310171,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+249,6213552,Ron Alexis,229310130,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+250,6213389,Aryan Parwal,229310036,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+251,6213355,Rohan Arora,229310393,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+252,6338583,Nidhi Dwivedy,229310386,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+253,6213353,Vedant Sanjay Kulkarni,229302608,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+254,6213403,Anand Mandlik,229310162,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+255,6726031,Gaurav Vedi,229310127,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+256,6213556,Vanshika,229311041,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+257,6213413,Karan M Bhatia,229310133,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+258,6213381,Anika Mathur,229310128,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+259,6213544,Amish,229310121,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+260,6213471,Muskan Kumari,229310155,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+261,6213531,Yanvi Arora,229310430,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+262,6213580,Pravin Gupta,229310184,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+263,6213422,Mohak Chandna,229310397,Bachelors of Technology,CSE - AIML,B.Tech,118,AB-1
+264,6213441,AHMAD ULLAH,229310081,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+265,6213560,Raghav Puri,229310124,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+266,6213345,Aditi Ramachandra Marar,229309153,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+267,6213518,Ayush Rakesh Prasad,229310199,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+268,6213408,Ritvik Shrivastava,229310214,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+269,6213545,Harsh Pal,229310041,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+270,6213476,Sairaj Ashok Sirsat,229311122,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+271,6338569,Ansh aggarwal,229310067,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+272,6213409,Sakshi Shrivastava,229310361,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+273,6213495,Hrishita Sushil Kesarwani,229303266,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+274,6213386,Snigdha Jhureley,229310299,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+275,6213360,Siddharth Singh,229310328,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+276,6213517,Khushi Jain,229311069,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+277,6338581,Harsh Dixit,229310376,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+278,6213447,Aryan Sinha,229310459,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+279,6213533,ANUSHKA KUMAR,229302404,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+280,6213456,Ananya Jaiswal,229310156,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+281,6213427,Shubham Dhirani,229310219,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+282,6213428,Joel Sibi Maruthoor,229310275,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+283,6213502,Aditya Dhanda,229310102,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+284,6213483,Arunima Mishra,229309135,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+285,6213418,ishita Agarwal,229303350,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+286,6213529,Abhishek Kumar,229310442,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+287,6338576,Shubhdeep Singh,229310186,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+288,6213482,Nikunj,229310160,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+289,6213497,Samriddhi Jakhmola,229309107,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+290,6213503,Shreya,229310154,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+291,6213335,Suyash Sinha,229302185,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+292,6213430,Harshit Charan Agrawal,229310390,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+293,6338572,Himanshul Aggarwal,229310109,Bachelors of Technology,CSE - AIML,B.Tech,120,AB-1
+294,6213548,Khushi Gupta,229310145,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+295,6213407,Siddh Jain,229310113,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+296,6213524,Lakshya Khandelwal,229310052,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+297,6213432,Satvika Arora,229310274,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+298,6213501,Sachi Srivastava,229310119,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+299,6213540,Jaspreet Kaur,229302307,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+300,6213416,DHRUV KAUSHIK,229310129,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+301,6338573,Aditya Nalwaya,229310151,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+302,6338582,Nirav Kandira,229310384,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+303,6213320,Aditya Dixit,229310347,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+304,6213348,Rishab Yadav,229310437,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+305,6213350,Akshata Nayak,229310375,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+306,6338578,Kuljeet Singh Shekhawat,229310234,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+307,6213329,Prince Juneja,229310015,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+308,6213565,Sagar Gupta,229310192,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+309,6213368,Chaitanya Sekra,229310016,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+310,6213546,Aditi Jain,229310194,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+311,6213336,Daksh Chopra,229310174,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+312,6213496,Karan Pal,229310075,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+313,6213358,domnique joe,229311048,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+314,6213523,Paramveer Singh,229310391,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+315,6213437,Ashish Pandey,229309198,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+316,6213493,Devansh Bansal,229310206,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+317,6213322,Vishesh Gaur,229310089,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+318,6213572,Harshita Fogat,229310116,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+319,6213347,Saumitra Bhargava,229310223,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+320,6213340,Paarshav Mehta,229310318,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+321,6213333,Gopal Chawla,229310188,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+322,6213475,Karthik Mukesh Nair,229310298,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+323,6213390,Yashovardhan Gupta,229310140,Bachelors of Technology,CSE - AIML,B.Tech,121,AB-1
+324,6213370,Adya Chauhan,229310216,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+325,6213444,Vivin Pathak,229310387,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+326,6213365,Mohit Hingorani,229310069,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+327,6213477,Mokshika Pandey,229310297,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+328,7001017,Divyansh Pandey,229310187,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+329,6338575,Jananjai Singh Rajawat,229310168,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+330,7003311,Saurav Kumar,229310467,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+331,6213543,Saksham Negi,229310340,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+332,7001019,Manav Prem Nand,229310352,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+333,6213399,Shreyansh Sharma,229310383,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+334,6213356,Kartik Patidar,229310317,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+335,6213464,Samyak Jain,229310413,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+336,6213349,Aryan Shukla,229310400,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+337,6213424,Swarnim Prasad,229302249,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+338,6213499,Aarushi Singh,229310210,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+339,6338594,Mihir Pareek,229311141,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+340,6338567,Arkin Sharma,229310062,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+341,6213420,Supram Kumar,229310454,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+342,7001012,Jay Jain,229303230,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+343,6213462,Aadityavardhan Singh Rathore,229310037,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+344,6213474,Ayushmaan Singh Shekhawat,229310008,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+345,6213376,Abhay Sharma,229310040,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+346,6213538,Yashansi Aggarwal,229310135,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+347,6213469,Pranav Sharma,229310180,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+348,6213374,Ayen Mukesh Mishra,229310424,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+349,6213330,Dhruv Deora,229310251,Bachelors of Technology,CSE - AIML,B.Tech,122,AB-1
+350,6212944,Sunny Jayaswal,229301061,Bachelors of Technology,CSE - Core,B.Tech,122,AB-1
+351,6213103,Pragy Parihar,229301150,Bachelors of Technology,CSE - Core,B.Tech,122,AB-1
+352,6213011,Karan Goyal,229301342,Bachelors of Technology,CSE - Core,B.Tech,122,AB-1
+353,6213090,Rishit Verma,229301268,Bachelors of Technology,CSE - Core,B.Tech,122,AB-1
+354,6212922,Chehak Gupta,229301254,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+355,6212844,Arunabh Singh,229301096,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+356,6213182,Harsh Agarwal,229301776,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+357,6213013,Harshrajsinh Rajendrasinh Solanki,229301545,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+358,6213048,Arnav Tiwary,229301508,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+359,6213026,Lakshita Agrawal,229301455,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+360,6213175,Siddharth Nandan Lal,229301206,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+361,6213115,Vivek Poonia,229301193,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+362,6213061,Varad Raskar,229301547,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+363,6213187,Vrinda Bindal,229301768,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+364,6213185,Saumya Rishikesh,229301641,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+365,6212885,Anurag Saish,229301017,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+366,6212921,PRANJALI PATI,229301750,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+367,6213149,Pratyush Dube,229301279,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+368,6212903,Arnav Gupta,229310451,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+369,6213215,Arnav Nahar,229301142,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+370,6213065,Harshit Shukla,229310209,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+371,6213063,Aditya Maheshwari,229301363,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+372,6213157,Anurag Bijea,229301700,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+373,6213280,Eshan Sud,229301214,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+374,6213263,Aditya Singh,229301144,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+375,6212875,Arnav Kawatra,229301286,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+376,6212916,Rakesh Kumawat,229301246,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+377,6213190,Anish Deepak Gudle,229301442,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+378,6212913,Pratham Agarwal,229301256,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+379,6212930,Ritvik Singh,229310325,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+380,6213015,Shivam Khosla,229301098,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+381,6213066,Avishi Semwal,229301154,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+382,6213122,Sudiksha Mathpal,229301658,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+383,6212978,Udayan Aditya,229301173,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+384,6213052,Ashirwad Sarmah,229301494,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+385,4981046,Suraj Kumar Konda,229302126,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+386,6213106,Harsh Pachouri,229301474,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+387,6212846,Navyaa Kabra,229301073,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+388,6213255,Krishna Tomar,229301495,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+389,6212952,Aniket Singh,229301784,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+390,6213221,Asmi Dipransh,229301316,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+391,6213073,Vidushi Agarwal,229301210,Bachelors of Technology,CSE - Core,B.Tech,123,AB-1
+392,6212904,Yuvraj Singh Roperia,229301435,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+393,6213082,Aditya Dixit,229301395,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+394,6212988,Arjun Saxena,229301555,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+395,6212955,AKASH RAJ,229301533,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+396,6213024,Ananya Patel,229311064,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+397,6213014,Krishna Jindal,229301187,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+398,6212831,Rainaa Giri,229310293,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+399,6338514,Vedant Tewari,229301275,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+400,6212986,Vaibhav Sharma,229301728,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+401,6212938,Adnan Sayed Khatib,229302403,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+402,6213188,Aryan Suchdev,229301663,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+403,6213023,Sanidhya Mathur,229301329,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+404,6213046,Abhyam,229310258,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+405,6212889,Ayush Kumar Mishra,229301456,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+406,6213029,Dishita Sharma,229301752,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+407,6213033,Harnoor Kaur,229301346,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+408,6213217,Prakhar Bhadauria,229310309,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+409,6213088,Nikita Sharma,229301413,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+410,6213016,Harsh Thakur,229301722,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+411,6212902,Satya Pranavi Gorinta,229301537,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+412,6212931,Parth Sarrathi,229301241,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+413,6213120,Sanjay Balasubramaniam,229309018,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+414,6212872,Anant Sharma,229301284,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+415,6213207,Mahi Tomar,229301180,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+416,6213179,JIYA RAJWANSHI,229301765,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+417,6294239,Sannidhya Mundra,229302216,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+418,6212984,Kanika Bansal,229301237,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+419,6213012,Swayam Aggarwal,229301281,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+420,6212886,Saksham Arun,229311032,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+421,6213144,Anurag Kumar,229301043,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+422,6213298,Sharanya Sharma,229301571,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+423,6213050,Utkarsh Shukla,229301763,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+424,6212968,Rohan Gosain,229301212,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+425,6213031,Shreyansh Bhatter,229301720,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+426,6213276,Ayush Behera,229301699,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+427,6213209,Chehak Miglani,229301381,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+428,6213216,Aish Sinha,229301492,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+429,6213008,Ritik Jain,229301379,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+430,6213108,Aditya Aggarwal,229301408,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+431,6213027,Aviral Gupta,229301446,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+432,6213000,Shivansh Pradhan,229301366,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+433,6213064,Meher Lakshmi Kanth Talluri,229301487,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+434,6213060,Aditya Raghuvanshi,229301626,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+435,6213009,Mayank Singh,229301313,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+436,6213167,Anahat Gill,229301264,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+437,6213089,Vidushi Singh,229303362,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+438,6213001,Nikita Jain,229301023,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+439,6213265,Nishtha Hooda,229301665,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+440,6213309,Ravindra Singh,229301818,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+441,6213055,Bhavya Dadhich,229301001,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+442,6213123,Faizan Ali Sayed,229301762,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+443,6213109,Radhesh Gupta,229301780,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+444,6294218,Narendra Kumar Kumawat,229301048,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+445,6213259,Yash Garg,229301674,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+446,6213208,Rutu Sandeep Bhandari,229310221,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+447,6212969,Tanya Jain,229301018,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+448,6213147,Sourodeep Adhikari,229301618,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+449,6213289,Kritika,229302110,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+450,6213229,AKSHIT SINGH,229301630,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+451,6213078,Manas Khudale,229301348,Bachelors of Technology,CSE - Core,B.Tech,126,AB-1
+452,6212975,Arnav Chopra,229301489,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+453,6212951,Anu Rawat,229301756,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+454,6212946,Yashi Shree,229301030,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+455,6212977,Aryan Jichkar,229301417,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+456,6213134,Avantika Jain,229301107,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+457,6213310,Vishnu,219301073,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+458,6213124,Yuvraj Singh,229302052,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+459,6212965,Anika Shrivastava,229301299,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+460,6212894,Vatsal Kumar Singh,229301324,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+461,6213241,Devika Kaimal,229301514,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+462,6213145,Varun Singh,229301352,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+463,6212910,Shreshth Purohit,229310254,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+464,6213054,KAMAL DASIK,229301597,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+465,6213107,Ashutosh Gupta,229301222,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+466,6212912,Ayush Bansal,229301345,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+467,6212812,Aryan Jade,229310212,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+468,6213154,Mihir Mathur,229301582,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+469,6213077,Sarthak Vaishampayan,229301678,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+470,6212980,Pranjal Tiwari,229301620,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+471,6213130,Pranit Khandelwal,229301596,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+472,6213160,Aayush Yadav,229301704,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+473,6213021,Mohit Choudhary,229301655,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+474,6212970,Soham Pankaj Kolhe,229301587,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+475,6213025,Aastha Rawat,229301155,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+476,6212917,Ayush Manik Daphal,229301457,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+477,6213086,Dhruvi Bahety,229301654,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+478,6212834,Arpit Joshi,229303351,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+479,6212906,Rehan Sawarn,229310449,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+480,6213152,Hamza Ikram,229301131,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+481,6212840,Janhavi Prafulla Rewatkar,229301769,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+482,6213113,Utsav Acharjya,229301358,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+483,6213076,Harsh Prasad,229301509,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+484,6212982,Sujal Vijay Dali,229310215,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+485,6213214,Ojasvi Padhiar,229301684,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+486,6212908,Manan Chahal,229301772,Bachelors of Technology,CSE - Core,B.Tech,LG_001,AB-2
+487,6213161,Shivansh Mishra,229301261,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+488,6213020,Ayushi Gupta,229301248,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+489,6213303,Shruti Saraswat,229301290,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+490,6213143,Sneha Singh,229301581,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+491,6213197,AARSH SHARMA,229301250,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+492,6213191,Suyash Srivastava,229301472,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+493,6213135,Netra Bansal,229301808,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+494,6212911,Khushboo Shreevikas Lal,229301767,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+495,6212935,tejas tanwar,229301219,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+496,6213183,Swarna Jain,229301247,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+497,6213095,Arnav Sidharth Singh,229301751,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+498,6213153,Aditya Raj,229310296,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+499,6213069,Uday Agarwal,229301778,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+500,6213168,Renee Verma,229301739,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+501,6213151,Ashutosh Prajapati,229301668,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+502,6213159,Khushi Parwal,229302142,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+503,6213200,Aryan Chawla,229301753,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+504,6213099,Prerna Dureja,229301453,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+505,6212862,Roopank Kumar Soni,229301183,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+506,6338519,Geetangi sharma,229301746,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+507,6213136,Lakshya Sharma,229301274,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+508,6213132,Ravi Ranjan,229301653,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+509,6212874,Anubhav Gupta,229301426,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+510,6213079,Shaurya Singh,229301095,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+511,6212933,Ansh Jain,229301127,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+512,6213219,Aryan Narwal,229301333,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+513,6213038,Shehul Singh,229301041,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+514,6213146,Angshuman Kishore Mahato,229301376,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+515,6213007,Parv Jain,229301771,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+516,6212927,Satvik Sarthak,229301239,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+517,6213250,Dhananjay Pratap Singh Chandel,229310339,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+518,6213118,Mansi Raj,229301586,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+519,6213232,Utkarsh Sharma,229301134,Bachelors of Technology,CSE - Core,B.Tech,LG_003,AB-2
+520,6212983,Abhay Krishna Dubey,229309111,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+521,6213164,Gooty Venkata Karthikeya,229301783,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+522,6212882,Ahana Jain,229301026,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+523,6212848,Dakshesh Bagga,229301283,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+524,6213172,Arnav Jain,229301326,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+525,6212923,Ranit Kumar Gupta,229311145,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+526,6213204,Vansh Bhandari,229301353,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+527,6212981,Swapnil Sharma,229303118,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+528,6213097,Madhav Bankeraika,229301578,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+529,6212942,Trinabh Kaushik,229301075,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+530,6213045,Sohan Kumar,229310369,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+531,6212974,Vedant Narang,229301498,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+532,6212895,A Aakash,229310308,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+533,6213129,Daksh Lal,229301282,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+534,6213222,Lipika Dudeja,229301292,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+535,6212833,Arnav Bajpai,229301225,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+536,6212991,Divyendu Singh Bhati,229301158,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+537,6213279,Neha Ravani,229301603,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+538,6212836,Molik Jain,229301105,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+539,6212963,Tanish Raj Singh,229301025,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+540,6213117,Zaara Fatima,229301450,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+541,6213053,SHIDHARTH ROY,229301423,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+542,6212992,Garv Gulati,229301059,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+543,6212897,Rudraksh,229301671,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+544,6212979,Shubh Gupta,229301312,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+545,6212861,Parin Bindle,229301106,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+546,6213228,Jasraj Narendra Shendge,229301558,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+547,6212936,Shrvan Rastogi,229301068,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+548,6212924,Raghvendra Sharma,229301262,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+549,6213278,Rakhee Kumari,229301809,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+550,6212964,Ruchir Aggarwal,229310203,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+551,6213105,Avni Sharma,229310335,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+552,6213203,MONIL RAJESH SHAH,229301552,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+553,6213245,Lakshya Varshney,229301071,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+554,6213111,Ayushman Gupta,229301523,Bachelors of Technology,CSE - Core,B.Tech,LG_007,AB-2
+555,6213166,Aiden Correya,229310267,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+556,6212950,Atharv Nanda,229301560,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+557,6213262,Medha Bhargava,229301038,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+558,6213070,Samagra Gupta,229301588,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+559,6212847,Ritvik Rajendrakumar Jaiswal,229301143,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+560,6213246,Ribhav Mittal,229301022,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+561,6212996,SATVIK VERMA,229301087,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+562,6212864,Maanav Ghai,229301058,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+563,6294237,Kunal Sharma,229302094,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+564,6212973,Anushka Singh,229301760,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+565,6213269,Ananya Raman,229301559,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+566,6213036,Daksh Sharma,229301459,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+567,6212937,Simran Pandey,229301796,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+568,6213125,Nupur Agarwal,229301186,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+569,6213258,Dakshyashree Jamwal,229301198,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+570,6213288,Shubham Anilkumar Mahajan,229301687,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+571,6213022,Reetika Agrawal,229301129,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+572,6212907,Prerit Verma Verma,229301267,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+573,6213156,Yamini Singh,229310448,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+574,6725993,Vyom Sharma,229301567,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+575,6212893,Anushka Soni,229301124,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+576,6213032,uday raj mishra,229301758,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+577,6213227,Kartik Mathur,229301238,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+578,6212957,Aashish Singh,229301585,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+579,6212958,Neel Mistry,229301306,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+580,6213094,Ansh Bharadwaj,229301499,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+581,6212854,Akshat Srivastava,229301002,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+582,6213040,Rachit Chetankumar Mehwala,229301102,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+583,6213104,Vaidehi Agarwal,229302245,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+584,6338517,Navneet Sai Vishnu,229301568,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+585,6212987,Shiven Agarwal,229301574,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+586,6212888,Jheel Mundhra,229301200,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+587,6213004,Ananya Srivastava,229310313,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+588,6213116,Bhumika Sharma,229301370,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+589,6725987,Sujit Subhash Sonune,229301037,Bachelors of Technology,CSE - Core,B.Tech,LG_009,AB-2
+590,6212956,Vagicharla Venkata Sai Rishik,229301598,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+591,6212855,Harsh Bijani,229301162,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+592,6212804,Ritesh Reddy,229301447,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+593,6212883,Yash Vardhan Singh,229301731,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+594,6212839,Tanisha Joshi,229301595,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+595,6213002,Yash Khandelwal,229301525,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+596,6213126,Preet Uday Kulkarni,229301385,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+597,6212932,Aryan Balodi,229301478,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+598,6213072,Sugam Nema,229301718,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+599,6213112,Mohit Solanki,229301742,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+600,6213037,Karan Kapoor,229301650,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+601,6212948,S Nikhil,229302059,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+602,6212976,Arav Kumar,229301278,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+603,6212959,Aritra Ray,229301563,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+604,6213087,Tathagata Ghosh,229301664,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+605,6212896,Saanvi Singh,229310241,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+606,6213080,Mayank Singhal,229301152,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+607,6213138,Vashu Basatiya,229301744,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+608,6213206,Nameesh Sachdev,229301672,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+609,6212929,Kaustubh Pareek,229301164,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+610,6212879,Tushar Pal,229303026,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+611,6212961,Sparsh Garg,229301255,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+612,6294229,Dev Dhiren Faldu,229301360,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+613,6213155,Subhojeet Santanu Roy,229301439,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+614,6213180,Suyash Sharma,229311125,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+615,6213257,Sitanshu Kapur,229301740,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+616,6212849,Abhijeet Anand Jha,229301027,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+617,6212905,Ranojit Palit,229301014,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+618,6212918,Yash Singh,229301708,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+619,6294470,Maanya Jaladi,229301178,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+620,6212842,Astik Adarsh,229310208,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+621,6212818,Duvvuru Akshay Reddy,229301430,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+622,6213102,Aryan Anil Pawar,229301788,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+623,6212817,Ekagra Agrawal,229301244,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+624,6212819,Vaibhav Rohilla,229301110,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+625,6212821,Sarthak Narang,229301024,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+626,6212876,Divyansh Sarswat,229301122,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+627,6213056,Siddharth Rekhade,229301698,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+628,6213067,Harsh Somani,229301243,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+629,6212900,Ayan Brijesh,229301422,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+630,6213006,Apoorv Singh,229301190,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+631,6212803,Parth Rai,229301119,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+632,6212941,Vidit Yaduvanshi,229301397,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+633,6213237,Avani Gupta,229301357,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+634,6212838,Shreyas Bhati,229301374,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+635,6725990,Devishi Mahajan,229301181,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+636,6767584,VINAYAK Harendra SINGH,229310368,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+637,6212926,ria chauhan,229301253,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+638,6213101,Sneha Akash Bhatia,229310269,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+639,6212881,Kaushal Shukla,229310205,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+640,6213057,Yash Kumar,229301396,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+641,6212989,Prakshal Manish Jain,229301686,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+642,6212915,Arihant Garg,229301308,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+643,6213234,Nishant Dinesh Tiwari,229310342,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+644,6213233,Lavanya Agrawal,229301661,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+645,6212953,Nekunj Khanna,229301323,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+646,6212871,Yashas Singh,229302345,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+647,6212857,Ekagrata Agarwal,229301128,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+648,6213189,Abhinav Maheshwari,229301382,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+649,6212823,Yashica Goel,229310312,Bachelors of Technology,CSE - Core,B.Tech,8,AB-2
+650,6213192,Lakshya Kaul,229301709,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+651,6213085,Eesh Khanna,229301412,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+652,6212873,Maulik Mehrotra,229301034,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+653,6213119,Shirish Agarwal,229301293,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+654,6212814,Sujay Kumar Singh,229310319,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+655,6213231,Mayank Maheshwari,229309030,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+656,6212994,Maahi Joshi,229301245,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+657,6213300,C Krishna Ghrini,229301135,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+658,6213181,Rashi Sharma,229301748,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+659,7001001,Saksham Chanana,229301116,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+660,6212800,Om Om sharma,229301448,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+661,6213039,Arvind Nair,229301393,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+662,6213121,Tanish Nigam,229302045,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+663,6213018,Udayan Nath Tripathi,229301694,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+664,6212995,gatik kaushik,229301725,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+665,6212914,Rugved Mayuresh Deshpande,229301605,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+666,6212798,Rhythm Mamtani,229301633,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+667,6213010,Risha Uppal,229301007,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+668,6212809,Anjaney Singh,229301432,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+669,6212863,Aditya Gupta,229301527,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+670,6213142,Rubhav Bahirwani,229301221,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+671,6212856,Atharv Thakle,229301715,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+672,6212869,Chinmay Sharma,229301411,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+673,6213044,Chitransh Saxena,229301482,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+674,6212802,Aryan Asthana,229301774,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+675,6213140,Sujal Rajput,229301471,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+676,6212829,Dhriti Katial,229301086,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+677,6213271,Rhythm Ravi,229301735,Bachelors of Technology,CSE - Core,B.Tech,9,AB-2
+678,6338541,Likith H R,229303084,Bachelors of Technology,IT,B.Tech,9,AB-2
+679,6214315,Yash Thapa,229302400,Bachelors of Technology,IT,B.Tech,9,AB-2
+680,6214130,Yash Labana,229302628,Bachelors of Technology,IT,B.Tech,9,AB-2
+681,6214113,Soumye Gupta,229302024,Bachelors of Technology,IT,B.Tech,9,AB-2
+682,6214264,SIDDHANT GARG,229302317,Bachelors of Technology,IT,B.Tech,9,AB-2
+683,6214181,Arsh Gupta,229302621,Bachelors of Technology,IT,B.Tech,9,AB-2
+684,6294310,sarthak,229302567,Bachelors of Technology,IT,B.Tech,9,AB-2
+685,6214069,Kislay Kumar,229302430,Bachelors of Technology,IT,B.Tech,9,AB-2
+686,6214147,Varun Lall Srivastava,229302149,Bachelors of Technology,IT,B.Tech,9,AB-2
+687,6214074,Naman Sharma,229302638,Bachelors of Technology,IT,B.Tech,9,AB-2
+688,6551100,Shreya Saihgal,229302340,Bachelors of Technology,IT,B.Tech,9,AB-2
+689,6214062,Digvijay Nandan,229302502,Bachelors of Technology,IT,B.Tech,9,AB-2
+690,6214274,Rohan Gupta,229302068,Bachelors of Technology,IT,B.Tech,9,AB-2
+691,6214179,Vaibhav Kumar,229302585,Bachelors of Technology,IT,B.Tech,9,AB-2
+692,6214217,Swarnim Rajput,229302595,Bachelors of Technology,IT,B.Tech,9,AB-2
+693,6214213,laksh gupta,229302144,Bachelors of Technology,IT,B.Tech,9,AB-2
+694,6214310,Supriya Mishra,229302196,Bachelors of Technology,IT,B.Tech,9,AB-2
+695,6214119,Dhruv Khandelwal,229302565,Bachelors of Technology,IT,B.Tech,9,AB-2
+696,6214025,Sumeet Chaturvedi,229302134,Bachelors of Technology,IT,B.Tech,9,AB-2
+697,6214208,Sanya Gulati,229302622,Bachelors of Technology,IT,B.Tech,9,AB-2
+698,6214207,Krishang Goel,229309035,Bachelors of Technology,IT,B.Tech,9,AB-2
+699,6214286,Ankika Chatterjee,229302009,Bachelors of Technology,IT,B.Tech,9,AB-2
+700,6214295,Satyam Chaudhary,229302463,Bachelors of Technology,IT,B.Tech,9,AB-2
+701,6294298,Ojas Mahajan,229302311,Bachelors of Technology,IT,B.Tech,9,AB-2
+702,6214232,Rishika Bhagawati,229302371,Bachelors of Technology,IT,B.Tech,9,AB-2
+703,6214284,Tulika Giri,229302036,Bachelors of Technology,IT,B.Tech,9,AB-2
+704,6214132,Yashika Khattri,229302074,Bachelors of Technology,IT,B.Tech,9,AB-2
+705,6214219,SAUNIL BAJPAI,229302477,Bachelors of Technology,IT,B.Tech,9,AB-2
+706,6214266,Aditya Raj,229302617,Bachelors of Technology,IT,B.Tech,9,AB-2
+707,6214082,Sushank Choudhary,229302339,Bachelors of Technology,IT,B.Tech,9,AB-2
+708,6214162,Ananya Gupta,229302272,Bachelors of Technology,IT,B.Tech,9,AB-2
+709,6214158,Gautam Govind,229302117,Bachelors of Technology,IT,B.Tech,9,AB-2
+710,6214140,Ridhima Poddar,229309253,Bachelors of Technology,IT,B.Tech,15,AB-2
+711,6214077,Kamya Singh,229302254,Bachelors of Technology,IT,B.Tech,15,AB-2
+712,6214314,Janhvi Arvind Kurkure,229302551,Bachelors of Technology,IT,B.Tech,15,AB-2
+713,6214221,Dhruv Menon,229302407,Bachelors of Technology,IT,B.Tech,15,AB-2
+714,6214117,Bhavya Bhaskar,229302314,Bachelors of Technology,IT,B.Tech,15,AB-2
+715,6214121,Utkarsh Kalra,229302529,Bachelors of Technology,IT,B.Tech,15,AB-2
+716,6214188,Saumya Dipak Malusare,229302016,Bachelors of Technology,IT,B.Tech,15,AB-2
+717,6214308,Rajat Prasanna Joshi,229302388,Bachelors of Technology,IT,B.Tech,15,AB-2
+718,6214215,Vedika Sachin Bhosale,229302434,Bachelors of Technology,IT,B.Tech,15,AB-2
+719,6214094,Advit Ashish Chudiwale,229302312,Bachelors of Technology,IT,B.Tech,15,AB-2
+720,6214305,Mannat Vij,229303226,Bachelors of Technology,IT,B.Tech,15,AB-2
+721,6214152,Saksham Lakhani,229302597,Bachelors of Technology,IT,B.Tech,15,AB-2
+722,6294288,Rishi Mittal,229302065,Bachelors of Technology,IT,B.Tech,15,AB-2
+723,6214182,Shreyansh Agarwal,229302583,Bachelors of Technology,IT,B.Tech,15,AB-2
+724,6294313,Rishita Jain,229302627,Bachelors of Technology,IT,B.Tech,15,AB-2
+725,6214282,Nyasha Daga,229302569,Bachelors of Technology,IT,B.Tech,15,AB-2
+726,6214202,Sparsh Srivastava,229302543,Bachelors of Technology,IT,B.Tech,15,AB-2
+727,6214263,Akanksha Sinha,229302305,Bachelors of Technology,IT,B.Tech,15,AB-2
+728,6214300,Neet Jain,229302373,Bachelors of Technology,IT,B.Tech,15,AB-2
+729,6214084,Jayant Singh Bhoj,229303041,Bachelors of Technology,IT,B.Tech,15,AB-2
+730,6214299,Shubham Kukreti,229302422,Bachelors of Technology,IT,B.Tech,15,AB-2
+731,6214045,Shashank Soni,229302598,Bachelors of Technology,IT,B.Tech,15,AB-2
+732,6214177,ANURAG TIWARI,229302309,Bachelors of Technology,IT,B.Tech,15,AB-2
+733,6214142,Pragya Singh,229302304,Bachelors of Technology,IT,B.Tech,15,AB-2
+734,6214276,Pankaj Patel,229302641,Bachelors of Technology,IT,B.Tech,15,AB-2
+735,6338535,Rohit Koshy,229302471,Bachelors of Technology,IT,B.Tech,15,AB-2
+736,6214312,Kumar Kartikay Shankar,229302066,Bachelors of Technology,IT,B.Tech,15,AB-2
+737,6214050,Gaurav Kalyankar,229302519,Bachelors of Technology,IT,B.Tech,15,AB-2
+738,6214111,kartik,229302480,Bachelors of Technology,IT,B.Tech,15,AB-2
+739,6294294,Kartikeya Gupta,229302253,Bachelors of Technology,IT,B.Tech,15,AB-2
+740,6214201,Tanu Tripathi,229303195,Bachelors of Technology,IT,B.Tech,107,AB-2
+741,6214170,Srishti Jaiswal,229302008,Bachelors of Technology,IT,B.Tech,107,AB-2
+742,6214129,Raghav,229302561,Bachelors of Technology,IT,B.Tech,107,AB-2
+743,6214146,Brindeshwar Sharma,229302035,Bachelors of Technology,IT,B.Tech,107,AB-2
+744,6214064,Gunish Bakshi,229302215,Bachelors of Technology,IT,B.Tech,107,AB-2
+745,6214185,Hanshita Poplani,229302572,Bachelors of Technology,IT,B.Tech,107,AB-2
+746,6214065,Anmol Srivastava,229302566,Bachelors of Technology,IT,B.Tech,107,AB-2
+747,6214156,Navya Mehta,229302515,Bachelors of Technology,IT,B.Tech,107,AB-2
+748,6214118,Parv,229302079,Bachelors of Technology,IT,B.Tech,107,AB-2
+749,6214236,Prarthana Srivastava,229302513,Bachelors of Technology,IT,B.Tech,107,AB-2
+750,6214210,PRATEEK SINGH,229302428,Bachelors of Technology,IT,B.Tech,107,AB-2
+751,6214186,Suryansh Mishra,229302518,Bachelors of Technology,IT,B.Tech,107,AB-2
+752,6214304,Raahim,229302301,Bachelors of Technology,IT,B.Tech,107,AB-2
+753,6294302,Animesh Yadav,229302427,Bachelors of Technology,IT,B.Tech,107,AB-2
+754,6726003,Abhishek Rajesh Deshpande,229302303,Bachelors of Technology,IT,B.Tech,107,AB-2
+755,6214238,Damandeep Kaur,229302626,Bachelors of Technology,IT,B.Tech,107,AB-2
+756,6214043,Samardeep Singh Bhasin,229302456,Bachelors of Technology,IT,B.Tech,107,AB-2
+757,6214209,Shivendra Pratap Singh,229302359,Bachelors of Technology,IT,B.Tech,107,AB-2
+758,6214166,Hardik Khanna,229302514,Bachelors of Technology,IT,B.Tech,107,AB-2
+759,6294297,Sahil Sanjay Moharil,229302286,Bachelors of Technology,IT,B.Tech,107,AB-2
+760,6214223,Prashuk Jain,229302001,Bachelors of Technology,IT,B.Tech,107,AB-2
+761,6214199,Nishant Kumar Sinha,229302324,Bachelors of Technology,IT,B.Tech,107,AB-2
+762,6214244,Dhruv Bareja,229302526,Bachelors of Technology,IT,B.Tech,107,AB-2
+763,6214093,Khushant Yadav,229302633,Bachelors of Technology,IT,B.Tech,107,AB-2
+764,6214087,Ashray Sinha,229209007,Bachelors of Technology,IT,B.Tech,107,AB-2
+765,6214309,Chinmayee Pandey,229302023,Bachelors of Technology,IT,B.Tech,107,AB-2
+766,6338532,Varshita Jain,229302408,Bachelors of Technology,IT,B.Tech,107,AB-2
+767,6214153,Vishal,229302097,Bachelors of Technology,IT,B.Tech,107,AB-2
+768,6214327,Shivam Kumar,229302239,Bachelors of Technology,IT,B.Tech,107,AB-2
+769,6214171,Harshneet Khanna,229302236,Bachelors of Technology,IT,B.Tech,107,AB-2
+770,6214241,Bhavesh Choudhary,229309188,Bachelors of Technology,IT,B.Tech,107,AB-2
+771,6294318,Yash Sharma,229303179,Bachelors of Technology,IT,B.Tech,107,AB-2
+772,6214317,Priyal Alok Goenka,229302252,Bachelors of Technology,IT,B.Tech,107,AB-2
+773,6214326,Shreyasi Ray,229302125,Bachelors of Technology,IT,B.Tech,107,AB-2
+774,6214240,Sana Singh,229302168,Bachelors of Technology,IT,B.Tech,107,AB-2
+775,6214187,Dhawal Verma,229303324,Bachelors of Technology,IT,B.Tech,109,AB-2
+776,6214255,Parul Bhalothia,229302578,Bachelors of Technology,IT,B.Tech,109,AB-2
+777,6214246,Vitarna Sharma,229302489,Bachelors of Technology,IT,B.Tech,109,AB-2
+778,6214224,Aayush Mishra,229302636,Bachelors of Technology,IT,B.Tech,109,AB-2
+779,6214189,Sarthak Rekhi,229302165,Bachelors of Technology,IT,B.Tech,109,AB-2
+780,6214214,Aryan Mishal,229302197,Bachelors of Technology,IT,B.Tech,109,AB-2
+781,6214160,Aditya Chandrashekhar Prabhudessai,229302211,Bachelors of Technology,IT,B.Tech,109,AB-2
+782,6725995,Siddhide Arun Panchwadkar,229302088,Bachelors of Technology,IT,B.Tech,109,AB-2
+783,6214222,Ashutosh Narayan,229302490,Bachelors of Technology,IT,B.Tech,109,AB-2
+784,6214233,Bhavye Verma,229302038,Bachelors of Technology,IT,B.Tech,109,AB-2
+785,6214134,Heer Khalasi,229302395,Bachelors of Technology,IT,B.Tech,109,AB-2
+786,6214257,Ayushi Gautam Jain,229302155,Bachelors of Technology,IT,B.Tech,109,AB-2
+787,6214163,Smriti Yadav,229302557,Bachelors of Technology,IT,B.Tech,109,AB-2
+788,6214262,Sanchit Rana,229302539,Bachelors of Technology,IT,B.Tech,109,AB-2
+789,6214318,Ansh Sharma,229302479,Bachelors of Technology,IT,B.Tech,109,AB-2
+790,6214070,Rounak Ambastha,229302333,Bachelors of Technology,IT,B.Tech,109,AB-2
+791,6214231,Rashi Shiva,229302534,Bachelors of Technology,IT,B.Tech,109,AB-2
+792,6214230,Palak Srivastava,229302137,Bachelors of Technology,IT,B.Tech,109,AB-2
+793,6214080,Utkarsh Singh,229302109,Bachelors of Technology,IT,B.Tech,109,AB-2
+794,6214227,Mahika Shukla,229302464,Bachelors of Technology,IT,B.Tech,109,AB-2
+795,6214168,Aseem Rai,229302476,Bachelors of Technology,IT,B.Tech,109,AB-2
+796,6214088,Divya Pawa,229302063,Bachelors of Technology,IT,B.Tech,109,AB-2
+797,6214167,Riya Mathur,229302642,Bachelors of Technology,IT,B.Tech,109,AB-2
+798,6214066,Arambh Singh Rajput,229303246,Bachelors of Technology,IT,B.Tech,109,AB-2
+799,6214054,GAUTAM KUMAR YADAV,229303255,Bachelors of Technology,IT,B.Tech,109,AB-2
+800,6214137,Bhavya Methi,229303223,Bachelors of Technology,IT,B.Tech,109,AB-2
+801,6214015,Shreyash Yaduwanshi,229302568,Bachelors of Technology,IT,B.Tech,109,AB-2
+802,6214122,Gurbani Kaur Saluja,229302139,Bachelors of Technology,IT,B.Tech,109,AB-2
+803,6214198,Shreya Kumari,229302571,Bachelors of Technology,IT,B.Tech,109,AB-2
+804,6214307,Vandana,229302376,Bachelors of Technology,IT,B.Tech,109,AB-2
+805,6214265,Ani Gupta,229302498,Bachelors of Technology,IT,B.Tech,109,AB-2
+806,6214253,Yashvi Arya,229302449,Bachelors of Technology,IT,B.Tech,109,AB-2
+807,6214226,Anshika Sethi,229302127,Bachelors of Technology,IT,B.Tech,109,AB-2
+808,6214319,Shaurya Saxena,229302033,Bachelors of Technology,IT,B.Tech,109,AB-2
+809,6214301,Priyansu Mukeshbhai Patel,229302587,Bachelors of Technology,IT,B.Tech,109,AB-2
+810,6214145,Manas Kumar,229302365,Bachelors of Technology,IT,B.Tech,111,AB-2
+811,6214155,Nishchay Mohan,229303037,Bachelors of Technology,IT,B.Tech,111,AB-2
+812,6338526,Yuvan Lakhmani,229302199,Bachelors of Technology,IT,B.Tech,111,AB-2
+813,6214172,Utkarsh Vijay,229302159,Bachelors of Technology,IT,B.Tech,111,AB-2
+814,6214138,Ketan Mathur,229302058,Bachelors of Technology,IT,B.Tech,111,AB-2
+815,6214283,Saumya Una,229302028,Bachelors of Technology,IT,B.Tech,111,AB-2
+816,6214313,Ansh Maurya,229302500,Bachelors of Technology,IT,B.Tech,111,AB-2
+817,6214115,Nainika Sinha,229302133,Bachelors of Technology,IT,B.Tech,111,AB-2
+818,6214085,Ayonija,229302173,Bachelors of Technology,IT,B.Tech,111,AB-2
+819,6214261,Shayan Kundu,229302152,Bachelors of Technology,IT,B.Tech,111,AB-2
+820,6214245,Ayaz Alam,229302384,Bachelors of Technology,IT,B.Tech,111,AB-2
+821,6214190,Yashvi Neema,229302524,Bachelors of Technology,IT,B.Tech,111,AB-2
+822,6214165,Sayak Das,229302080,Bachelors of Technology,IT,B.Tech,111,AB-2
+823,6214316,Chirag Mishra,229302221,Bachelors of Technology,IT,B.Tech,111,AB-2
+824,6214267,Asman Bindra,229302520,Bachelors of Technology,IT,B.Tech,111,AB-2
+825,6214273,Jay Gupta,229302602,Bachelors of Technology,IT,B.Tech,111,AB-2
+826,6338543,Shubham Garg,229303121,Bachelors of Technology,IT,B.Tech,111,AB-2
+827,6214331,Harry Nipul Pattani,229302652,Bachelors of Technology,IT,B.Tech,111,AB-2
+828,6214330,Ankur kumar,229302644,Bachelors of Technology,IT,B.Tech,111,AB-2
+829,6214194,Nishchay Vikas Lamba,229302029,Bachelors of Technology,IT,B.Tech,111,AB-2
+830,6214175,Renesa Rajesh Israni,229302114,Bachelors of Technology,IT,B.Tech,111,AB-2
+831,6214058,Ritik Laxwani,229303207,Bachelors of Technology,IT,B.Tech,111,AB-2
+832,6214243,Anushka Sharma,229302020,Bachelors of Technology,IT,B.Tech,111,AB-2
+833,6214159,Chetna Vijay Rai,229302013,Bachelors of Technology,IT,B.Tech,111,AB-2
+834,6214027,Dhruv Rathee,229302605,Bachelors of Technology,IT,B.Tech,111,AB-2
+835,6214197,Vikrant Jindal,229302445,Bachelors of Technology,IT,B.Tech,111,AB-2
+836,6214067,Atashi Saraswat,229302525,Bachelors of Technology,IT,B.Tech,111,AB-2
+837,6214325,Harsh Bhalwar,229302555,Bachelors of Technology,IT,B.Tech,111,AB-2
+838,6214148,Aarya Abhijit Joshi,229302346,Bachelors of Technology,IT,B.Tech,111,AB-2
+839,6214150,Vaibhav Chouhan,229302599,Bachelors of Technology,IT,B.Tech,111,AB-2
+840,6214183,Anirudh Bhatnagar,229303155,Bachelors of Technology,IT,B.Tech,115,AB-2
+841,6214271,SUJAL KUMAR SETHI,229302501,Bachelors of Technology,IT,B.Tech,115,AB-2
+842,6214225,Siddharth Mishra,229302629,Bachelors of Technology,IT,B.Tech,115,AB-2
+843,6214191,TARUN GUPTA,229302588,Bachelors of Technology,IT,B.Tech,115,AB-2
+844,6214131,Shagun Verma,229303024,Bachelors of Technology,IT,B.Tech,115,AB-2
+845,6214228,Akshat Mishra,229302319,Bachelors of Technology,IT,B.Tech,115,AB-2
+846,6294306,Rohit Ojha,229302516,Bachelors of Technology,IT,B.Tech,115,AB-2
+847,6294295,Yuvraj Singh Bhullar,229302278,Bachelors of Technology,IT,B.Tech,115,AB-2
+848,6214178,Shreya Gupta,229302230,Bachelors of Technology,IT,B.Tech,115,AB-2
+849,6214260,Avika Somya,229302560,Bachelors of Technology,IT,B.Tech,115,AB-2
+850,6214180,ANSH SRIVASTAVA,229303112,Bachelors of Technology,IT,B.Tech,115,AB-2
+851,6294301,Jatin Tilwani Manojbhai Tilwani,229302420,Bachelors of Technology,IT,B.Tech,115,AB-2
+852,6214021,Vinamra Bhonsle,229302343,Bachelors of Technology,IT,B.Tech,115,AB-2
+853,6214269,Swati Nayak,229302275,Bachelors of Technology,IT,B.Tech,115,AB-2
+854,6726019,Vighnesh Nikam,229302646,Bachelors of Technology,IT,B.Tech,115,AB-2
+855,6214068,Naman Sachdeva,229302321,Bachelors of Technology,IT,B.Tech,115,AB-2
+856,6997984,Bhavesh Badhe,229302647,Bachelors of Technology,IT,B.Tech,115,AB-2
+857,6214039,Divyam Sharma,229302478,Bachelors of Technology,IT,B.Tech,115,AB-2
+858,6214154,Satvik Agarwal,229302178,Bachelors of Technology,IT,B.Tech,115,AB-2
+859,6726012,Vinay NA,229302467,Bachelors of Technology,IT,B.Tech,115,AB-2
+860,6214206,Lakshya Pawar,229302177,Bachelors of Technology,IT,B.Tech,115,AB-2
+861,6214101,Rishabh Nenawati,229302575,Bachelors of Technology,IT,B.Tech,115,AB-2
+862,6214104,Sameer Kumar,229302532,Bachelors of Technology,IT,B.Tech,115,AB-2
+863,6214106,Sumit Poonia,229302030,Bachelors of Technology,IT,B.Tech,115,AB-2
+863,6214106,Sumit Poonia,229302030,Bachelors of Technology,IT,B.Tech,115,AB-2
+864,6997899,Rakesh Savalram Mali,229302650,Bachelors of Technology,IT,B.Tech,115,AB-2
+864,6997899,Rakesh Savalram Mali,229302650,Bachelors of Technology,IT,B.Tech,115,AB-2
+865,6214056,Tanishk Nagda,229302461,Bachelors of Technology,IT,B.Tech,115,AB-2
+865,6214056,Tanishk Nagda,229302461,Bachelors of Technology,IT,B.Tech,115,AB-2
+866,6214103,Yash Kamra,229309158,Bachelors of Technology,IT,B.Tech,115,AB-2
+866,6214103,Yash Kamra,229309158,Bachelors of Technology,IT,B.Tech,115,AB-2
+867,6214036,Rishit Mehrotra,229301218,Bachelors of Technology,IT,B.Tech,115,AB-2
+867,6214036,Rishit Mehrotra,229301218,Bachelors of Technology,IT,B.Tech,115,AB-2
+868,6214009,Manas mishra,229302176,Bachelors of Technology,IT,B.Tech,115,AB-2
+868,6214009,Manas mishra,229302176,Bachelors of Technology,IT,B.Tech,115,AB-2
+869,6726009,Erwin Anthonio Pimenta,229302391,Bachelors of Technology,IT,B.Tech,115,AB-2
+869,6726009,Erwin Anthonio Pimenta,229302391,Bachelors of Technology,IT,B.Tech,203,AB-2
+870,6214061,Mohit,229302545,Bachelors of Technology,IT,B.Tech,203,AB-2
+870,6214061,Mohit,229302545,Bachelors of Technology,IT,B.Tech,203,AB-2
+871,6214073,Ishika Singh,229302167,Bachelors of Technology,IT,B.Tech,203,AB-2
+871,6214073,Ishika Singh,229302167,Bachelors of Technology,IT,B.Tech,203,AB-2
+872,6214174,Ayush Pandey,229302111,Bachelors of Technology,IT,B.Tech,203,AB-2
+872,6214174,Ayush Pandey,229302111,Bachelors of Technology,IT,B.Tech,203,AB-2
+873,6294316,Puneet Sharma,229303065,Bachelors of Technology,IT,B.Tech,203,AB-2
+873,6294316,Puneet Sharma,229303065,Bachelors of Technology,IT,B.Tech,203,AB-2
+874,6214048,Manish Chaudhary,229303306,Bachelors of Technology,IT,B.Tech,203,AB-2
+874,6214048,Manish Chaudhary,229303306,Bachelors of Technology,IT,B.Tech,203,AB-2
+875,6214133,Aditya Kumar,229302290,Bachelors of Technology,IT,B.Tech,203,AB-2
+875,6214133,Aditya Kumar,229302290,Bachelors of Technology,IT,B.Tech,203,AB-2
+876,6214040,Ajitesh Dasgupta,229302385,Bachelors of Technology,IT,B.Tech,203,AB-2
+876,6214040,Ajitesh Dasgupta,229302385,Bachelors of Technology,IT,B.Tech,203,AB-2
+877,6294317,Srishti Mahapatra,229303138,Bachelors of Technology,IT,B.Tech,203,AB-2
+877,6294317,Srishti Mahapatra,229303138,Bachelors of Technology,IT,B.Tech,203,AB-2
+878,6726014,Ayush Chaturvedi,229302506,Bachelors of Technology,IT,B.Tech,203,AB-2
+878,6726014,Ayush Chaturvedi,229302506,Bachelors of Technology,IT,B.Tech,203,AB-2
+879,6214055,Aniket Mishra,229303347,Bachelors of Technology,IT,B.Tech,203,AB-2
+879,6214055,Aniket Mishra,229303347,Bachelors of Technology,IT,B.Tech,203,AB-2
+880,6294287,Pranav Raj,229302048,Bachelors of Technology,IT,B.Tech,203,AB-2
+880,6294287,Pranav Raj,229302048,Bachelors of Technology,IT,B.Tech,203,AB-2
+881,7001008,Tushar Khanchandani,229302503,Bachelors of Technology,IT,B.Tech,203,AB-2
+881,7001008,Tushar Khanchandani,229302503,Bachelors of Technology,IT,B.Tech,203,AB-2
+882,6214107,Sparsh Rawat,229302072,Bachelors of Technology,IT,B.Tech,203,AB-2
+882,6214107,Sparsh Rawat,229302072,Bachelors of Technology,IT,B.Tech,203,AB-2
+883,6214123,Pranav Bhardwaj,229302591,Bachelors of Technology,IT,B.Tech,203,AB-2
+883,6214123,Pranav Bhardwaj,229302591,Bachelors of Technology,IT,B.Tech,203,AB-2
+884,6725999,Sidhali Singh,229302191,Bachelors of Technology,IT,B.Tech,203,AB-2
+884,6725999,Sidhali Singh,229302191,Bachelors of Technology,IT,B.Tech,203,AB-2
+885,6214004,Piyush Kumar MAURYA,229302521,Bachelors of Technology,IT,B.Tech,203,AB-2
+885,6214004,Piyush Kumar MAURYA,229302521,Bachelors of Technology,IT,B.Tech,203,AB-2
+886,6214293,Ishika Saxena,229302183,Bachelors of Technology,IT,B.Tech,203,AB-2
+887,6214270,Syamantak Paul,229302217,Bachelors of Technology,IT,B.Tech,203,AB-2
+888,6214105,Siddhant Mohan Kokate,229302081,Bachelors of Technology,IT,B.Tech,3,AB-2
+889,6214237,Anushka Singh,229303164,Bachelors of Technology,IT,B.Tech,3,AB-2
+890,6214211,Himanshu Sharma,229309169,Bachelors of Technology,IT,B.Tech,3,AB-2
+891,6214098,Aryan Mittal,229302331,Bachelors of Technology,IT,B.Tech,3,AB-2
+892,6214229,Alden Savio Dcunha,229302263,Bachelors of Technology,IT,B.Tech,3,AB-2
+893,6214041,Vivek Yadav,229302592,Bachelors of Technology,IT,B.Tech,3,AB-2
+894,6214247,Ayush Raj,229302494,Bachelors of Technology,IT,B.Tech,3,AB-2
+895,6214089,Poulam Saha,229302470,Bachelors of Technology,IT,B.Tech,3,AB-2
+896,6214100,Samriddhi Dwivedi,229302302,Bachelors of Technology,IT,B.Tech,3,AB-2
+897,6214017,Lakshay Dhawan,229302369,Bachelors of Technology,IT,B.Tech,3,AB-2
+898,6214169,Siddhant Jaiswal,229302148,Bachelors of Technology,IT,B.Tech,3,AB-2
+899,6214091,Rachit Srivastava,229302374,Bachelors of Technology,IT,B.Tech,3,AB-2
+900,6214296,ANSH GWARI,229302401,Bachelors of Technology,IT,B.Tech,3,AB-2
+901,6726017,honey nagpal,229302614,Bachelors of Technology,IT,B.Tech,3,AB-2
+902,6214332,Shashi Gupta,229302648,Bachelors of Technology,IT,B.Tech,3,AB-2
+903,6214204,Arohi Singh,229311236,Bachelors of Technology,IT,B.Tech,3,AB-2
+904,6214010,Ananda Chaturvedi,229302457,Bachelors of Technology,IT,B.Tech,3,AB-2
+905,6214124,Praveen Purohit,229302259,Bachelors of Technology,IT,B.Tech,3,AB-2
+906,6214110,Raghav Kalra,229302274,Bachelors of Technology,IT,B.Tech,3,AB-2
+907,6338539,piyush sharma,229302509,Bachelors of Technology,IT,B.Tech,3,AB-2
+908,6294312,Bhawna Relhan,229302603,Bachelors of Technology,IT,B.Tech,3,AB-2
+909,6214112,Supriya Katiyar,229302574,Bachelors of Technology,IT,B.Tech,3,AB-2
+910,7001010,Shobhit Mathuria,229302618,Bachelors of Technology,IT,B.Tech,3,AB-2
+911,6214205,Vaibhav Srivastava,229302472,Bachelors of Technology,IT,B.Tech,3,AB-2
+912,6214014,Dhairya Mukesh Balani,229303096,Bachelors of Technology,IT,B.Tech,3,AB-2
+913,6214078,Jaivardhan Ranawat,229302101,Bachelors of Technology,IT,B.Tech,3,AB-2
+914,6338533,Ilika mahajan,229302443,Bachelors of Technology,IT,B.Tech,3,AB-2
+915,6294299,Prakarsh Mehrotra,229302387,Bachelors of Technology,IT,B.Tech,3,AB-2
+916,6214059,Kunal Kumar,229302487,Bachelors of Technology,IT,B.Tech,3,AB-2
+917,6214033,Sneha Manan,229302251,Bachelors of Technology,IT,B.Tech,3,AB-2
+918,6214285,Dhruv Gupta,229302077,Bachelors of Technology,IT,B.Tech,3,AB-2
+919,6214096,Satvik Shukla,229303261,Bachelors of Technology,IT,B.Tech,3,AB-2
+920,6726015,Harsh Upadhyay,229302547,Bachelors of Technology,IT,B.Tech,3,AB-2
+921,6213996,Abhiraj Anand,229309258,Bachelors of Technology,IT,B.Tech,3,AB-2
+922,6214006,Armaan Vaish,229302060,Bachelors of Technology,IT,B.Tech,3,AB-2
+923,6214195,Supash Agarwal,229302171,Bachelors of Technology,IT,B.Tech,3,AB-2
+924,6214234,Vanshaj Agarwal,229302323,Bachelors of Technology,IT,B.Tech,3,AB-2
+925,6214034,Nakul J P Shrivastava,229302372,Bachelors of Technology,IT,B.Tech,3,AB-2
+926,6214046,Vaibhav Sharma,229303281,Bachelors of Technology,IT,B.Tech,3,AB-2
+927,6214099,Punyam Gupta,229302104,Bachelors of Technology,IT,B.Tech,3,AB-2
+928,6214200,Priyansh Singh Patel,229302279,Bachelors of Technology,IT,B.Tech,3,AB-2
+929,6214102,Akshat Sinha,229302122,Bachelors of Technology,IT,B.Tech,3,AB-2
+930,6214143,Raghav Kakani,229302469,Bachelors of Technology,IT,B.Tech,3,AB-2
+931,6214035,Kushagra Priyam,229302292,Bachelors of Technology,IT,B.Tech,3,AB-2
+932,6214298,Tanya Goyanka,229302631,Bachelors of Technology,IT,B.Tech,3,AB-2
+933,6214120,Vidushi Gupta,229302455,Bachelors of Technology,IT,B.Tech,3,AB-2
+934,6214249,Amol Gupta,229302623,Bachelors of Technology,IT,B.Tech,3,AB-2
+935,6213992,Kshitiz Chauhan,229302004,Bachelors of Technology,IT,B.Tech,3,AB-2
+936,6214083,Utkarsh,229302266,Bachelors of Technology,IT,B.Tech,3,AB-2
+937,6214135,Ananya Tiwari,229302037,Bachelors of Technology,IT,B.Tech,3,AB-2
+938,6214090,ABHINEET MATHUR,229302540,Bachelors of Technology,IT,B.Tech,3,AB-2
+939,6214164,Mitisha Singh,229302011,Bachelors of Technology,IT,B.Tech,3,AB-2
+940,6214081,Dhruv Shounak,229302115,Bachelors of Technology,IT,B.Tech,3,AB-2
+941,6214031,ayushi Shukla,229302542,Bachelors of Technology,IT,B.Tech,3,AB-2
+942,6214193,Dinesh Jakhar,229302276,Bachelors of Technology,IT,B.Tech,3,AB-2
+943,6214242,Anoushka Hitendra Shetty,229302414,Bachelors of Technology,IT,B.Tech,3,AB-2
+944,6214114,Manav Singh,229302140,Bachelors of Technology,IT,B.Tech,3,AB-2
+945,6726024,Aman Sharma,229303298,Bachelors of Technology,IT,B.Tech,3,AB-2

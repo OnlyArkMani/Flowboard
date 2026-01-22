@@ -1,0 +1,30 @@
+field,value
+section,Executive summary
+status,Completed
+processed_at,2026-01-21T06:53:03.243174+05:30
+processing_mode,transform_gradebook
+plan_notes,Standard transform applied
+rows,4
+cols,5
+total_cells,20
+missing_cells,0
+missing_cell_rate,0.0%
+duplicate_rows,0
+duplicate_student_ids,0
+numeric_columns,score
+section,Dataset profile
+department,Examination
+filename,school_results_updated.xlsx
+columns,"student_id, student_name, class, subject, score"
+section,Column completeness (lowest)
+student_id,100.0%
+student_name,100.0%
+class,100.0%
+subject,100.0%
+score,100.0%
+section,Numeric statistics
+score.count,4
+score.mean,84.25
+score.median,84.5
+score.min,76
+score.max,92
